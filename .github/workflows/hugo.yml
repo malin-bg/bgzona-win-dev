@@ -32,11 +32,14 @@ jobs:
 
       - name: Build
         run: hugo --minify
+        working-directory: bgzona-win-dev
+
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./public
+          path: bgzona-win-dev/public
+
 
   deploy:
     environment:
