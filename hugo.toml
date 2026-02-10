@@ -2,6 +2,9 @@ baseURL = "https://dev.bgzona.win/"
 languageCode = "bg-bg"
 title = "bgzona.win (dev)"
 theme = "PaperMod"
+canonifyURLs = true
+relativeURLs = false
+
 
 [params]
   ShowReadingTime = false
