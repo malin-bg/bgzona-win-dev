@@ -1,0 +1,32 @@
+baseURL = "https://dev.bgzona.win/"
+languageCode = "bg-bg"
+title = "bgzona.win (dev)"
+theme = "PaperMod"
+
+[params]
+  ShowReadingTime = false
+
+[menu]
+  [[menu.main]]
+    identifier = "principi"
+    name = "Принципи"
+    url = "/principi/"
+    weight = 10
+
+  [[menu.main]]
+    identifier = "statii"
+    name = "Статии"
+    url = "/statii/"
+    weight = 20
+
+  [[menu.main]]
+    identifier = "bezobraziya"
+    name = "Безобразия"
+    url = "/bezobraziya/"
+    weight = 30
+
+  [[menu.main]]
+    identifier = "humor"
+    name = "Хумор"
+    url = "/humor/"
+    weight = 40
