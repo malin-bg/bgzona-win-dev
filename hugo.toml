@@ -1,6 +1,6 @@
 baseURL = "https://dev.bgzona.win/"
 languageCode = "bg-bg"
-title = "bgzona.win (dev)"
+title = "BG Зона - независима и неутрална България"
 theme = "PaperMod"
 canonifyURLs = true
 relativeURLs = false
