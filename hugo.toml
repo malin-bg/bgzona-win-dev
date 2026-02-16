@@ -1,23 +1,28 @@
 baseURL = "https://dev.bgzona.win/"
-languageCode = "bg-bg"
+languageCode = "bg"
 title = "BG Зона - независима и неутрална България"
 theme = "PaperMod"
 canonifyURLs = true
 relativeURLs = false
 
-
 [params]
   ShowReadingTime = false
 
-[params.assets]
-  favicon = "/favicon.ico"
-  favicon16x16 = "/favicon-16x16.png"
-  favicon32x32 = "/favicon-32x32.png"
-  apple_touch_icon = "/apple-touch-icon.png"
+  [params.profileMode]
+    enabled = true
+    title = "BG Зона"
+    subtitle = "независима и неутрална България"
+
+  [params.assets]
+    favicon = "/favicon.ico"
+    favicon16x16 = "/favicon-16x16.png"
+    favicon32x32 = "/favicon-32x32.png"
+    apple_touch_icon = "/apple-touch-icon.png"
 
 [[params.socialIcons]]
 name = "facebook"
 url = "https://www.facebook.com/PolitSatira/"
+
 
 
 [menu]
