@@ -17,12 +17,6 @@ relativeURLs = false
     favicon32x32 = "/favicon-32x32.png"
     apple_touch_icon = "/apple-touch-icon.png"
 
-[[params.socialIcons]]
-name = "facebook"
-url = "https://www.facebook.com/PolitSatira/"
-
-
-
 
 [menu]
   [[menu.main]]
@@ -48,3 +42,10 @@ url = "https://www.facebook.com/PolitSatira/"
     name = "Хумор"
     url = "/humor/"
     weight = 40
+
+  [[menu.main]]
+    identifier = "facebook"
+    name = "Facebook"
+    url = "https://www.facebook.com/PolitSatira/"
+    weight = 90
+
