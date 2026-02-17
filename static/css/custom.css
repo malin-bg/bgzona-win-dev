@@ -1,3 +1,5 @@
+.post-entry { outline: 3px solid red !important; }
+
 /* 2 колони за списъка с темите в /statii/ - само на широк екран */
 @media (min-width: 900px) {
   .main .posts {
