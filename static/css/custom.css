@@ -1,0 +1,13 @@
+/* 2 колони за списъка с темите в /statii/ - само на широк екран */
+@media (min-width: 900px) {
+  .main .posts {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+
+  .main .posts .post-entry {
+    margin: 0 !important;
+    height: 100% !important;
+  }
+}
