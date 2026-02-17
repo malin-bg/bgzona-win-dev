@@ -1,20 +1,21 @@
-/* --- По-компактна LIST страница (Статии, Принципи, др.) --- */
+/* Разширяваме полезната ширина на list страниците (Статии, Принципи и т.н.) */
+body.list main.main {
+  max-width: 1200px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
 
 /* 2 колони (desktop) */
 .posts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;              /* по-малко разстояние между картите */
-  align-items: stretch;   /* всички карти да са еднаква височина в реда */
-  margin-top: 8px !important;
+  gap: 14px;
 }
 
 /* Мобилно - 1 колона */
 @media (max-width: 768px) {
-  .posts {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+  body.list main.main { max-width: 720px; }
+  .posts { grid-template-columns: 1fr; gap: 10px; }
 }
 
 /* Стягаме вертикалните отстояния над списъка */
@@ -23,7 +24,7 @@ body.list .main {
 }
 
 body.list .page-header {
-  margin: 0 0 10px 0 !important; /* по-малко място под "Статии" */
+  margin: 0 0 10px 0 !important;
 }
 
 body.list .page-header h1 {
@@ -32,17 +33,17 @@ body.list .page-header h1 {
 }
 
 body.list .post-content {
-  margin: 0 0 10px 0 !important; /* по-малко място под описанието */
+  margin: 0 0 10px 0 !important;
 }
 
-/* --- Карта (нормално) --- */
+/* Карта (нормално) */
 body.list main.main > article.post-entry {
-  border: 1px solid rgba(255, 0, 0, 0.55) !important; /* тънка рамка */
+  border: 1px solid rgba(255, 0, 0, 0.55) !important;
   border-radius: 12px !important;
-  padding: 12px 14px !important;  /* по-компактна карта */
+  padding: 12px 14px !important;
   background: rgba(0, 0, 0, 0.02) !important;
-  min-height: 110px;              /* уеднаквява височината */
-  margin: 0 !important;           /* махаме доп. разстояния, ако има */
+  min-height: 110px;
+  margin: 0 !important;
   transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -59,10 +60,7 @@ body.list main.main > article.post-entry .entry-header h2 {
   line-height: 1.15;
 }
 
-body.list main.main > article.post-entry .entry-content {
-  margin: 0 !important;
-}
-
+body.list main.main > article.post-entry .entry-content,
 body.list main.main > article.post-entry .entry-content p {
   margin: 0 !important;
 }
