@@ -1,0 +1,26 @@
+/* 2 колони за листинга на секции (картите с темите) - само на по-широк екран */
+@media (min-width: 900px) {
+  /* PaperMod list cards container */
+  .post-entry {
+    break-inside: avoid;
+  }
+
+  /* Grid за списъка със секциите */
+  .main .post-entry,
+  .main .posts {
+    /* не пипаме тук */
+  }
+
+  /* В PaperMod картите на секции излизат в .posts */
+  .main .posts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* да не се разтягат грозно */
+  .main .posts .post-entry {
+    margin: 0;
+    height: 100%;
+  }
+}
