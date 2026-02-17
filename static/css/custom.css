@@ -1,22 +1,38 @@
-.post-entry { outline: 3px solid red !important; }
-
-/* 2 колони за списъците в PaperMod (desktop), 1 колона на мобилно */
+/* 2 колони (desktop), 1 колона (mobile) */
 .posts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-}
-
-/* Карта */
-.post-entry {
-  border: 2px solid red; /* остави го, щом ти харесва */
-  border-radius: 12px;
+  gap: 16px; /* по-малко разстояние между картите */
 }
 
 /* Мобилно - една колона */
 @media (max-width: 768px) {
   .posts {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 
+/* Карта (нормално) */
+body.list main.main > article.post-entry {
+  border: 1px solid rgba(255, 0, 0, 0.55) !important; /* тънка рамка */
+  border-radius: 12px !important;
+  padding: 18px !important; /* малко по-компактно */
+  background: rgba(0, 0, 0, 0.02) !important; /* лек различен фон */
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Hover (когато мишката е върху картата) */
+body.list main.main > article.post-entry:hover {
+  border: 2px solid rgba(255, 0, 0, 0.95) !important; /* по-дебела рамка */
+  background: rgba(0, 0, 0, 0.05) !important; /* леко потъмнява */
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+/* По-стегнати заглавия и текст */
+body.list main.main > article.post-entry .entry-header h2 {
+  margin: 0 0 8px 0 !important;
+}
+body.list main.main > article.post-entry .entry-content {
+  margin: 0 !important;
+}
