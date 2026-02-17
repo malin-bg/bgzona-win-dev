@@ -43,9 +43,5 @@ relativeURLs = false
     url = "/humor/"
     weight = 40
 
-  [[menu.main]]
-    identifier = "facebook"
-    name = "Facebook"
-    url = "https://www.facebook.com/PolitSatira/"
-    weight = 90
+  
 
