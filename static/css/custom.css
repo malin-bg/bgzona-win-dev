@@ -1,15 +1,22 @@
 .post-entry { outline: 3px solid red !important; }
 
-/* 2 колони за списъка с темите в /statii/ - само на широк екран */
-@media (min-width: 900px) {
-  .main .posts {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 24px !important;
-  }
+/* 2 колони за списъците в PaperMod (desktop), 1 колона на мобилно */
+.posts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
 
-  .main .posts .post-entry {
-    margin: 0 !important;
-    height: 100% !important;
+/* Карта */
+.post-entry {
+  border: 2px solid red; /* остави го, щом ти харесва */
+  border-radius: 12px;
+}
+
+/* Мобилно - една колона */
+@media (max-width: 768px) {
+  .posts {
+    grid-template-columns: 1fr;
   }
 }
+
