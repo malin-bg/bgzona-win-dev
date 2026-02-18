@@ -12,7 +12,7 @@ BG Зона е личен сайт за идеи и аргументи как Б
 - [Данъци и осигуровки](/statii/danaci-osigurovki/) - [Икономика](/statii/ikonomika/)
 - [Гласуване](/statii/glasyvane/) - [Демография](/statii/demografiya/) 
 - [Образование](/statii/obrazovanie/) - [Здравеопазване](/statii/zdraveopazvane/)
-- [Превенция на катастрофи](/statii/patishta-katastrofi-zastrahovki/) 
+- [Превенция на катастрофи](/statii/patishta-katastrofi-zastrahovki/) - [История и паметници](/statii/istoriya-pametnici/)
 - [Външна политика](/statii/vanshna-politika/) - [Други](/statii/obshto/)
 
 ## Защо съществува този сайт
