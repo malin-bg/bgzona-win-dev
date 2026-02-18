@@ -64,3 +64,15 @@ body.list main.main > article.post-entry .entry-content,
 body.list main.main > article.post-entry .entry-content p {
   margin: 0 !important;
 }
+/* --- FIX: да няма огромна празнина преди картите в section/list страници --- */
+body.list .post-content,
+body.section .post-content {
+  margin-bottom: 16px !important;
+  padding-bottom: 0 !important;
+}
+
+/* Ако някъде main е flex и центрира - дърпай нагоре */
+body.list main.main,
+body.section main.main {
+  justify-content: flex-start;
+}
