@@ -2,7 +2,8 @@
 title: "Подоходен данък + осигуровки - един механизъм, една истина"
 date: 2026-02-19
 draft: false
-description: "завръщане на справедливостта"
+summary: "С плоския подоходен данък бедните пълнят бюджета, а богатите плащат по-малък процент след осигурителния таван."
+description: "завръщане на данъчно-осигурителната справедливост"
 images:
   - "statii/danaci-osigurovki/danak-osigurovki-edin-mehanizam/efektivna-tezhest.jpg"
 ---
