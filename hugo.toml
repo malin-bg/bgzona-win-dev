@@ -7,6 +7,7 @@ relativeURLs = false
 
 [params]
   ShowReadingTime = false
+  images = ["images/og-default.jpg"]
 
   [params.profileMode]
     enabled = false
@@ -16,7 +17,6 @@ relativeURLs = false
     favicon16x16 = "/favicon-16x16.png"
     favicon32x32 = "/favicon-32x32.png"
     apple_touch_icon = "/apple-touch-icon.png"
-
 
 [menu]
   [[menu.main]]
@@ -42,6 +42,3 @@ relativeURLs = false
     name = "Хумор"
     url = "/humor/"
     weight = 40
-
-  
-
