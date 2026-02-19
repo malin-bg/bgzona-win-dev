@@ -72,4 +72,4 @@ images:
 ## Свързани статии
 - [Гласуване - права след задължения, уседналост и реална съпричастност](/statii/glasuvane/prava-zadalzhenia-usednalost/)
 - [Образование - подарък или инвестиция, която трябва да се защити](/statii/obrazovanie/obrazovanie-dar-ili-investicia/)
-- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/statii/demografia/uchilishta-v-chuzhbina-za-nasha-smetka/)
+- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](statii/demografiya/uchilishta-v-chuzhbina-za-nasha-smetka/)
