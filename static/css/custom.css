@@ -36,34 +36,6 @@ body.list .post-content {
   margin: 0 0 10px 0 !important;
 }
 
-/* Карта (нормално) */
-body.list main.main > article.post-entry {
-  border: 1px solid rgba(255, 0, 0, 0.55) !important;
-  border-radius: 12px !important;
-  padding: 12px 14px !important;
-  background: rgba(0, 0, 0, 0.02) !important;
-  min-height: 110px;
-  margin: 0 !important;
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-
-/* Hover */
-body.list main.main > article.post-entry:hover {
-  border-color: rgba(255, 0, 0, 0.95) !important;
-  background: rgba(0, 0, 0, 0.05) !important;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.10);
-}
-
-/* По-стегнати вътрешни отстояния в картата */
-body.list main.main > article.post-entry .entry-header h2 {
-  margin: 0 0 6px 0 !important;
-  line-height: 1.15;
-}
-
-body.list main.main > article.post-entry .entry-content,
-body.list main.main > article.post-entry .entry-content p {
-  margin: 0 !important;
-}
 /* --- FIX: да няма огромна празнина преди картите в section/list страници --- */
 body.list .post-content,
 body.section .post-content {
@@ -76,11 +48,64 @@ body.list main.main,
 body.section main.main {
   justify-content: flex-start;
 }
+
+/* =========================================================
+   КАРТИ - рамка за post-entry + first-entry (вкл. Home)
+   ========================================================= */
+
+/* Карта (нормално + първа статия на началната) */
+body.list main.main > article.post-entry,
+body.list main.main > article.first-entry,
+body.home main.main > article.post-entry,
+body.home main.main > article.first-entry {
+  border: 1px solid rgba(255, 0, 0, 0.55) !important;
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  background: rgba(0, 0, 0, 0.02) !important;
+  min-height: 110px;
+  margin: 0 !important;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Hover */
+body.list main.main > article.post-entry:hover,
+body.list main.main > article.first-entry:hover,
+body.home main.main > article.post-entry:hover,
+body.home main.main > article.first-entry:hover {
+  border-color: rgba(255, 0, 0, 0.95) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.10);
+}
+
+/* По-стегнати вътрешни отстояния в картата */
+body.list main.main > article.post-entry .entry-header h2,
+body.list main.main > article.first-entry .entry-header h2,
+body.home main.main > article.post-entry .entry-header h2,
+body.home main.main > article.first-entry .entry-header h2 {
+  margin: 0 0 6px 0 !important;
+  line-height: 1.15;
+}
+
+body.list main.main > article.post-entry .entry-content,
+body.list main.main > article.post-entry .entry-content p,
+body.list main.main > article.first-entry .entry-content,
+body.list main.main > article.first-entry .entry-content p,
+body.home main.main > article.post-entry .entry-content,
+body.home main.main > article.post-entry .entry-content p,
+body.home main.main > article.first-entry .entry-content,
+body.home main.main > article.first-entry .entry-content p {
+  margin: 0 !important;
+}
+
+/* =========================================================
+   YouTube embed
+   ========================================================= */
+
 .yt-embed {
   position: relative;
   width: 100%;
   max-width: 900px;
-  margin: 16px auto;
+  margin: 18px auto;
   padding-top: 56.25%; /* 16:9 */
 }
 
@@ -92,4 +117,3 @@ body.section main.main {
   border: 0;
   border-radius: 10px;
 }
-.yt-embed { margin: 18px auto; }
