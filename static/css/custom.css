@@ -164,3 +164,11 @@ body.home main.main > article.first-entry .entry-content p {
   font-weight: 700;
   opacity: 0.85;
 }
+@media (max-width: 640px) {
+  .link-card__a {
+    grid-template-columns: 1fr;
+  }
+  .link-card__img {
+    width: 100%;
+  }
+}
