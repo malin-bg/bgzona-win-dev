@@ -2,7 +2,7 @@
 title: "Подоходен данък + осигуровки - един механизъм, една истина"
 date: 2026-02-19
 draft: false
-description: "С плоския данък бедните пълнят бюджета, а при висок доход ефективната тежест пада след осигурителния таван."
+description: "или завръщане на справедливостта"
 images:
   - "statii/danaci-osigurovki/danak-osigurovki-edin-mehanizam/efektivna-tezhest.jpg"
 ---
