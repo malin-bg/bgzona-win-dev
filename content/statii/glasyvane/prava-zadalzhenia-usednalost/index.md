@@ -2,7 +2,7 @@
 title: "Гласуване - права след задължения"
 date: 2026-02-19
 draft: false
-summary: "Човек трябва да гласува за мястото, където реално живее постоянно"
+summary: "Човек трябва да гласува за мястото, където реално живее постоянно. Гласуване само в България, с 3г уседналост и образователен ценз"
 description: "Гласуване само в България, с 3г уседналост и образователен ценз"
 youtube_id: "-8ZQISPzmqI"
 images:
@@ -165,9 +165,9 @@ images:
 ---
 
 ## Свързани статии
-- [Образование - подарък или инвестиция, която някой дължи обратно](/obrazovanie/obrazovanie-dar-ili-investicia/)
-- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/demografia/uchilishta-v-chuzhbina-za-nasha-smetka/)
-- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/demografia/grazhdanstvo-dvoyno-zalichavane-10-godini/)
+- [Образование - подарък или инвестиция, която някой дължи обратно](/statii/obrazovanie/obrazovanie-dar-ili-investicia/)
+- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/statii/demografia/uchilishta-v-chuzhbina-za-nasha-smetka/)
+- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografia/grazhdanstvo-dvoyno-zalichavane-10-godini/)
 
 ---
 
