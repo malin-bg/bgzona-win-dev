@@ -117,3 +117,50 @@ body.home main.main > article.first-entry .entry-content p {
   border: 0;
   border-radius: 10px;
 }
+.link-card {
+  max-width: 900px;
+  margin: 18px auto;
+}
+
+.link-card__a {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 14px;
+  align-items: center;
+  text-decoration: none;
+  border: 1px solid rgba(0,0,0,0.15);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer; /* важно: "ръка" */
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.link-card__a:hover {
+  border-color: rgba(255, 0, 0, 0.75);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+
+.link-card__img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  display: block;
+}
+
+.link-card__title {
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+
+.link-card__desc {
+  opacity: 0.9;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+
+.link-card__cta {
+  font-weight: 700;
+  opacity: 0.85;
+}
