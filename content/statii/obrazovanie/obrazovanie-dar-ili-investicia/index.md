@@ -76,9 +76,9 @@
 ---
 
 ## Свързани статии
-- [Гласуване - права след задължения, уседналост и реална съпричастност](/statii/glasuvane/prava-zadalzhenia-usednalost/)
-- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/statii/demografia/uchilishta-v-chuzhbina-za-nasha-smetka/)
-- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografia/grazhdanstvo-dvoyno-zalichavane-10-godini/)
+- [Гласуване - права след задължения, уседналост и реална съпричастност](/statii/glasyvane/prava-zadalzhenia-usednalost/)
+- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/statii/demografiya/uchilishta-v-chuzhbina-za-nasha-smetka/)
+- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografiya/grazhdanstvo-dvoyno-zalichavane-10-godini/)
 
 ---
 

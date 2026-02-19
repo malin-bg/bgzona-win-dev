@@ -166,10 +166,6 @@ images:
 
 ## Свързани статии
 - [Образование - подарък или инвестиция, която някой дължи обратно](/statii/obrazovanie/obrazovanie-dar-ili-investicia/)
-- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/statii/demografia/uchilishta-v-chuzhbina-za-nasha-smetka/)
-- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografia/grazhdanstvo-dvoyno-zalichavane-10-godini/)
+- [Училища в чужбина за наша сметка - моралният и бюджетният абсурд](/statii/demografiya/uchilishta-v-chuzhbina-za-nasha-smetka/)
+- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografiya/grazhdanstvo-dvoyno-zalichavane-10-godini/)
 
----
-
-## Бележки и източници
-- В България темата за секциите в чужбина периодично се променя с изменения в Изборния кодекс. :contentReference[oaicite:4]{index=4}

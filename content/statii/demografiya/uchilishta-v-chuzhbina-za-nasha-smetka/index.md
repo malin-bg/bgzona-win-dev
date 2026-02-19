@@ -48,6 +48,6 @@
 ---
 
 ## Свързани статии
-- [Гласуване - права след задължения, уседналост и реална съпричастност](/statii/glasuvane/prava-zadalzhenia-usednalost/)
+- [Гласуване - права след задължения, уседналост и реална съпричастност](/statii/glasyvane/prava-zadalzhenia-usednalost/)
 - [Образование - подарък или инвестиция, която трябва да се защити](/statii/obrazovanie/obrazovanie-dar-ili-investicia/)
-- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografia/grazhdanstvo-dvoyno-zalichavane-10-godini/)
+- [Гражданство - същност, двойно гражданство и заличаване след 10 години](/statii/demografiya/grazhdanstvo-dvoyno-zalichavane-10-godini/)
