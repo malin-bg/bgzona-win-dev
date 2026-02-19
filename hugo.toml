@@ -7,6 +7,8 @@ relativeURLs = false
 
 [params]
   ShowReadingTime = false
+  ShowDate = false
+  ShowPostNavLinks = false
   images = ["images/og-default.jpg"]
 
   [params.profileMode]
