@@ -20,6 +20,11 @@ relativeURLs = false
     favicon32x32 = "/favicon-32x32.png"
     apple_touch_icon = "/apple-touch-icon.png"
 
+  [params.label]
+  text = "BG Зона - независима и неутрална България"
+  icon = "/logo.png"
+  iconHeight = 32
+
 [menu]
   [[menu.main]]
     identifier = "principi"
@@ -44,3 +49,4 @@ relativeURLs = false
     name = "Хумор"
     url = "/humor/"
     weight = 40
+
