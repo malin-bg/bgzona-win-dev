@@ -11,9 +11,9 @@
   const ASSETS_BASE = "{{ .Site.Params.assetsBaseURL }}";
   const JSON_PATH = "/slideshow/slideshow.json";
 
-  // TEST settings (после ги връщаме):
-  const IDLE_MINUTES = 6;
-  const SLIDE_SECONDS = 30;
+  // Production settings:
+  const IDLE_MINUTES = 6;    // start after 6 minutes of inactivity
+  const SLIDE_SECONDS = 30;  // change image every 30 seconds
 
   if (!ASSETS_BASE) return;
 
@@ -59,8 +59,7 @@
     const closeBtn = el("button", { class: "bgz-close", type: "button", title: "Затвори" }, ["X"]);
     const ui = el("div", { class: "bgz-ui" }, [
       el("div", { class: "bgz-note" }, [
-        "Слайдшоу - движение/клик/клавиш за връщане. Старт след ",
-        String(Math.round(IDLE_MINUTES * 60)), " сек бездействие."
+        "Слайдшоу - движение/клик/клавиш за връщане. Старт след 6 мин бездействие."
       ])
     ]);
 
@@ -69,6 +68,7 @@
 
     closeBtn.addEventListener("click", hideOverlay);
 
+    // Any activity closes overlay
     ["mousemove", "mousedown", "keydown", "touchstart", "wheel"].forEach(evt => {
       overlay.addEventListener(evt, function (e) {
         e.preventDefault();
@@ -95,6 +95,7 @@
     const url = ASSETS_BASE + rel;
     imgEl.src = url;
 
+    // preload next image for smoother transitions
     const next = slides[(i + 1) % slides.length];
     preload(ASSETS_BASE + next);
   }
@@ -143,22 +144,32 @@
   async function init() {
     try {
       await loadSlides();
+
+      // Manual start: any link with data-slideshow="start"
+      document.addEventListener("click", (e) => {
+        const a = e.target.closest && e.target.closest('a[data-slideshow="start"]');
+        if (!a) return;
+        e.preventDefault();
+        if (slides.length) showOverlay();
+      });
+
       resetIdle();
 
+      // Any interaction resets idle timer
       ["mousemove", "mousedown", "keydown", "touchstart", "wheel", "scroll"].forEach(evt => {
         window.addEventListener(evt, resetIdle, { passive: true });
       });
 
+      // When returning to tab, restart idle timer
       document.addEventListener("visibilitychange", () => {
         if (!document.hidden) resetIdle();
       });
 
     } catch (e) {
-      // тих fail
+      // silent fail
     }
   }
 
   init();
 })();
 </script>
-
