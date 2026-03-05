@@ -6,3 +6,158 @@
   </span>
 </footer>
 
+<script>
+(function () {
+  const ASSETS_BASE = "{{ .Site.Params.assetsBaseURL }}";
+  const JSON_PATH = "/slideshow/slideshow.json";
+
+  // TEST settings (после ги връщаме):
+  const IDLE_MINUTES = 0.17; // ~10 секунди
+  const SLIDE_SECONDS = 2;
+
+  if (!ASSETS_BASE) return;
+
+  let idleTimer = null;
+  let slideTimer = null;
+  let slides = [];
+  let idx = 0;
+  let isOpen = false;
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function el(tag, attrs = {}, children = []) {
+    const e = document.createElement(tag);
+    Object.entries(attrs).forEach(([k, v]) => {
+      if (k === "style") e.style.cssText = v;
+      else if (k === "class") e.className = v;
+      else e.setAttribute(k, v);
+    });
+    children.forEach(c => e.appendChild(typeof c === "string" ? document.createTextNode(c) : c));
+    return e;
+  }
+
+  function ensureOverlay() {
+    if (document.getElementById("bgz-slideshow-overlay")) return;
+
+    const style = el("style", {}, [`
+#bgz-slideshow-overlay{position:fixed;inset:0;z-index:99999;display:none;background:#000}
+#bgz-slideshow-overlay.open{display:block}
+#bgz-slideshow-overlay .bgz-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#bgz-slideshow-overlay .bgz-ui{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font:14px/1.35 system-ui,Segoe UI,Arial;color:#fff;background:linear-gradient(transparent, rgba(0,0,0,.65))}
+#bgz-slideshow-overlay .bgz-note{opacity:.9}
+#bgz-slideshow-overlay .bgz-close{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.35);color:#fff;font-size:22px;cursor:pointer}
+#bgz-slideshow-overlay .bgz-close:hover{background:rgba(0,0,0,.55)}
+    `]);
+
+    const img = el("img", { class: "bgz-img", alt: "BG Зона - колажи" });
+    const closeBtn = el("button", { class: "bgz-close", type: "button", title: "Затвори" }, ["X"]);
+    const ui = el("div", { class: "bgz-ui" }, [
+      el("div", { class: "bgz-note" }, [
+        "Слайдшоу - движение/клик/клавиш за връщане. Старт след ",
+        String(Math.round(IDLE_MINUTES * 60)), " сек бездействие."
+      ])
+    ]);
+
+    const overlay = el("div", { id: "bgz-slideshow-overlay" }, [style, img, closeBtn, ui]);
+    document.body.appendChild(overlay);
+
+    closeBtn.addEventListener("click", hideOverlay);
+
+    ["mousemove", "mousedown", "keydown", "touchstart", "wheel"].forEach(evt => {
+      overlay.addEventListener(evt, function (e) {
+        e.preventDefault();
+        hideOverlay();
+      }, { passive: false });
+    });
+  }
+
+  function preload(url) {
+    const i = new Image();
+    i.src = url;
+  }
+
+  async function loadSlides() {
+    const res = await fetch(ASSETS_BASE + JSON_PATH, { cache: "no-store" });
+    if (!res.ok) throw new Error("slideshow.json not reachable");
+    const arr = await res.json();
+    if (!Array.isArray(arr) || arr.length === 0) throw new Error("slideshow.json empty");
+    slides = shuffle(arr.slice());
+  }
+
+  function setImg(imgEl, i) {
+    const rel = slides[i];
+    const url = ASSETS_BASE + rel;
+    imgEl.src = url;
+
+    const next = slides[(i + 1) % slides.length];
+    preload(ASSETS_BASE + next);
+  }
+
+  function showOverlay() {
+    if (isOpen) return;
+    ensureOverlay();
+
+    const overlay = document.getElementById("bgz-slideshow-overlay");
+    const img = overlay.querySelector(".bgz-img");
+
+    isOpen = true;
+    overlay.classList.add("open");
+
+    idx = 0;
+    setImg(img, idx);
+
+    clearInterval(slideTimer);
+    slideTimer = setInterval(() => {
+      idx = (idx + 1) % slides.length;
+      setImg(img, idx);
+    }, SLIDE_SECONDS * 1000);
+  }
+
+  function hideOverlay() {
+    const overlay = document.getElementById("bgz-slideshow-overlay");
+    if (!overlay) return;
+
+    isOpen = false;
+    overlay.classList.remove("open");
+    clearInterval(slideTimer);
+    slideTimer = null;
+
+    resetIdle();
+  }
+
+  function resetIdle() {
+    if (isOpen) return;
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (!slides.length) return;
+      showOverlay();
+    }, IDLE_MINUTES * 60 * 1000);
+  }
+
+  async function init() {
+    try {
+      await loadSlides();
+      resetIdle();
+
+      ["mousemove", "mousedown", "keydown", "touchstart", "wheel", "scroll"].forEach(evt => {
+        window.addEventListener(evt, resetIdle, { passive: true });
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) resetIdle();
+      });
+
+    } catch (e) {
+      // тих fail
+    }
+  }
+
+  init();
+})();
+</script>
