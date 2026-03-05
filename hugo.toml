@@ -10,6 +10,7 @@ relativeURLs = false
   ShowPostNavLinks = false
   hideMeta = true
   images = ["images/og-default.jpg"]
+  assetsBaseURL = "https://malin-bg.github.io/bgzona-assets"
 
   [params.profileMode]
     enabled = false
@@ -21,9 +22,9 @@ relativeURLs = false
     apple_touch_icon = "/apple-touch-icon.png"
 
   [params.label]
-  text = "BG Зона - независима и неутрална България"
-  icon = "/logo.png"
-  iconHeight = 32
+    text = "BG Зона - независима и неутрална България"
+    icon = "/logo.png"
+    iconHeight = 32 
 
 [menu]
   [[menu.main]]
@@ -45,8 +46,21 @@ relativeURLs = false
     weight = 30
 
   [[menu.main]]
+    identifier = "videa"
+    name = "Видеа"
+    url = "/videa/"
+    weight = 35
+
+  [[menu.main]]
+    identifier = "kolaji"
+    name = "Колажи"
+    url = "/kolaji/"
+    weight = 37  
+
+  [[menu.main]]
     identifier = "humor"
     name = "Хумор"
     url = "/humor/"
     weight = 40
+
 
