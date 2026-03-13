@@ -173,13 +173,18 @@ body.home main.main > article.first-entry .entry-content p {
   }
 }
 
-a[href="#slideshow"]{
-  font-weight:700;
-  text-decoration:none;
-  padding:2px 10px;
-  border-radius:999px;
-  border:1px solid currentColor;
+/* Slideshow link - match #slideshow even if it becomes /#slideshow or full URL */
+a[href="#slideshow"],
+a[href$="#slideshow"]{
+  display:inline-block !important;
+  font-weight:700 !important;
+  text-decoration:none !important;
+  padding:2px 10px !important;
+  border-radius:999px !important;
+  border:1px solid currentColor !important;
 }
-a[href="#slideshow"]:hover{
-  text-decoration:none;
+
+a[href="#slideshow"]:hover,
+a[href$="#slideshow"]:hover{
+  text-decoration:none !important;
 }
