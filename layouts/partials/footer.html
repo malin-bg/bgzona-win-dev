@@ -107,6 +107,10 @@
     const overlay = document.getElementById("bgz-slideshow-overlay");
     const img = overlay.querySelector(".bgz-img");
 
+    // New shuffle on every start + random first image
+    slides = shuffle(slides.slice());
+    idx = Math.floor(Math.random() * slides.length);
+    
     isOpen = true;
     overlay.classList.add("open");
 
