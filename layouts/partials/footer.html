@@ -147,7 +147,7 @@
 
       // Manual start: any link with data-slideshow="start"
       document.addEventListener("click", (e) => {
-        const a = e.target.closest && e.target.closest('a[data-slideshow="start"]');
+        const a = e.target.closest && e.target.closest('a[href="#slideshow"]');
         if (!a) return;
         e.preventDefault();
         if (slides.length) showOverlay();
