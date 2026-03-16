@@ -173,74 +173,66 @@
       // silent fail
     }
   }
+// ===== Gallery (Kolaji) =====
+async function buildGallery() {
+  const holder = document.getElementById("bgz-gallery");
+  if (!holder) return; // only on /kolaji/
+
+  const res = await fetch(ASSETS_BASE + "/slideshow/gallery.json", { cache: "force-cache" });
+  if (!res.ok) return;
+
+  const arr = await res.json();
+  if (!Array.isArray(arr) || !arr.length) return;
+
+  holder.innerHTML = "";
+
+  for (const rel of arr) {
+    const fullUrl = ASSETS_BASE + rel;
+
+    const thumbRel = rel.replace("/kolaji/full/bgzona-p-", "/kolaji/og/bgzona-og-");
+    const thumbUrl = ASSETS_BASE + thumbRel;
+
+    const a = document.createElement("a");
+    a.href = fullUrl;
+    a.dataset.full = fullUrl;
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.alt = "Колаж";
+    img.src = thumbUrl;
+    img.onerror = () => { img.onerror = null; img.src = fullUrl; };
+
+    a.appendChild(img);
+    holder.appendChild(a);
+  }
+
+  const lb = document.getElementById("bgz-lightbox");
+  const lbImg = lb ? lb.querySelector("img") : null;
+  const lbX = lb ? lb.querySelector(".bgz-x") : null;
+
+  function close() {
+    if (!lb) return;
+    lb.classList.remove("open");
+    lb.setAttribute("aria-hidden", "true");
+    if (lbImg) lbImg.src = "";
+  }
+
+  holder.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("a[data-full]");
+    if (!a || !lb || !lbImg) return;
+    e.preventDefault();
+    lbImg.src = a.dataset.full;
+    lb.classList.add("open");
+    lb.setAttribute("aria-hidden", "false");
+  });
+
+  if (lbX) lbX.addEventListener("click", close);
+  if (lb) lb.addEventListener("click", (e) => { if (e.target === lb) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+}
+buildGallery();
 
   init();
 })();
 </script>
 
-<script>
-(function () {
-  const ASSETS_BASE = "{{ .Site.Params.assetsBaseURL }}";
-  const JSON_PATH = "/slideshow/gallery.json";
-  if (!ASSETS_BASE) return;
-
-  async function buildGallery() {
-    const holder = document.getElementById("bgz-gallery");
-    if (!holder) return; // only on /kolaji/
-
-    const res = await fetch(ASSETS_BASE + JSON_PATH, { cache: "force-cache" });
-    if (!res.ok) return;
-    const arr = await res.json();
-    if (!Array.isArray(arr) || !arr.length) return;
-
-    holder.innerHTML = "";
-
-    for (const rel of arr) {
-      const fullUrl = ASSETS_BASE + rel;
-
-      // Try thumbnail from /kolaji/og/ matching number; fallback to full
-      const thumbRel = rel.replace("/kolaji/full/bgzona-p-", "/kolaji/og/bgzona-og-");
-      const thumbUrl = ASSETS_BASE + thumbRel;
-
-      const a = document.createElement("a");
-      a.href = fullUrl;
-      a.dataset.full = fullUrl;
-
-      const img = document.createElement("img");
-      img.loading = "lazy";
-      img.alt = "Колаж";
-      img.src = thumbUrl;
-      img.onerror = () => { img.onerror = null; img.src = fullUrl; };
-
-      a.appendChild(img);
-      holder.appendChild(a);
-    }
-
-    const lb = document.getElementById("bgz-lightbox");
-    const lbImg = lb ? lb.querySelector("img") : null;
-    const lbX = lb ? lb.querySelector(".bgz-x") : null;
-
-    function close() {
-      if (!lb) return;
-      lb.classList.remove("open");
-      lb.setAttribute("aria-hidden", "true");
-      if (lbImg) lbImg.src = "";
-    }
-
-    holder.addEventListener("click", (e) => {
-      const a = e.target.closest && e.target.closest("a[data-full]");
-      if (!a || !lb || !lbImg) return;
-      e.preventDefault();
-      lbImg.src = a.dataset.full;
-      lb.classList.add("open");
-      lb.setAttribute("aria-hidden", "false");
-    });
-
-    if (lbX) lbX.addEventListener("click", close);
-    if (lb) lb.addEventListener("click", (e) => { if (e.target === lb) close(); });
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-  }
-
-  buildGallery();
-})();
-</script>
