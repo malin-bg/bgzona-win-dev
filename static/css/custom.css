@@ -188,3 +188,59 @@ a[href="#slideshow"]:hover,
 a[href$="#slideshow"]:hover{
   text-decoration:none !important;
 }
+
+/* Collage gallery grid - no crop */
+.bgz-gallery{
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap:12px;
+  margin-top:16px;
+}
+
+.bgz-gallery a{
+  display:block;
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid rgba(127,127,127,.35);
+  background:#000;
+}
+
+.bgz-gallery img{
+  width:100%;
+  height:260px;
+  object-fit:contain;
+  display:block;
+}
+
+/* Lightbox */
+#bgz-lightbox{
+  position:fixed;
+  inset:0;
+  z-index:99998;
+  display:none;
+  background:rgba(0,0,0,.92);
+}
+#bgz-lightbox.open{ display:block; }
+#bgz-lightbox img{
+  position:absolute;
+  inset:0;
+  margin:auto;
+  max-width:95vw;
+  max-height:95vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+}
+#bgz-lightbox .bgz-x{
+  position:absolute;
+  top:10px;
+  right:10px;
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.3);
+  background:rgba(0,0,0,.35);
+  color:#fff;
+  font-size:22px;
+  cursor:pointer;
+}
