@@ -218,7 +218,14 @@
         if (slides.length) showOverlay();
       });
 
-      await buildGallery();
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+          buildGallery();
+        }, { once: true });
+      } else {
+        await buildGallery();
+      }
+
       resetIdle();
 
       ["mousemove", "mousedown", "keydown", "touchstart", "wheel", "scroll"].forEach(evt => {
