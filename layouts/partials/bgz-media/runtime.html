@@ -3,9 +3,10 @@
 <dialog id="media-lightbox" aria-label="Преглед на изображение">
   <div class="media-lightbox-bar">
     <span id="lightbox-counter" role="status" aria-live="polite"></span>
+    <button id="lightbox-view-toggle" class="media-dialog-button" type="button" aria-pressed="false" aria-controls="media-lightbox">Само изображение</button>
     <button id="lightbox-close" class="media-dialog-button" type="button" autofocus aria-label="Затвори прегледа (Escape)">Затвори ✕</button>
   </div>
-  <div class="media-lightbox-image"><img id="lightbox-image" alt=""></div>
+  <div class="media-lightbox-image"><img id="lightbox-image" alt="" role="button" tabindex="0" aria-pressed="false" aria-label="Само изображение"></div>
   <div class="media-lightbox-navigation">
     <button id="lightbox-prev" class="media-dialog-button" type="button" aria-label="Предишно изображение">← Предишно</button>
     <a id="lightbox-page" class="media-dialog-button" target="_blank" rel="noopener noreferrer" aria-label="Страница на изображението (нов раздел)">Страница ↗</a>

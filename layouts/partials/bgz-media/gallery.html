@@ -1,5 +1,5 @@
 <section class="bgz-media-collection" data-media-collection="{{ .Section }}" aria-labelledby="media-collection-title">
-  <header class="page-header"><h1 id="media-collection-title">{{ .Title }}</h1></header>
+  <header class="page-header"><h1 id="media-collection-title">{{ if eq .Section "poslaniya" }}Послания, цитати и размисли{{ else }}{{ .Title }}{{ end }}</h1></header>
   {{ with .Content }}<div class="post-content">{{ . }}</div>{{ end }}
   <div id="media-gallery" class="media-grid">
     {{ range .RegularPages.ByParam "number" }}
