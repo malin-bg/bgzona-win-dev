@@ -61,10 +61,19 @@ main.main:has(> .bgz-media-page) { max-width: 1200px; }
 .media-card .media-action { min-height: 34px; padding-block: 6px; }
 .media-action-facebook { background: #1659b7; color: #fff; border-color: #1659b7; }
 .media-action-copy { background: var(--primary); color: var(--theme); }
-.media-action-original { background: var(--entry); color: var(--primary); border-style: solid; }
+.media-action-original { background: var(--entry); color: var(--primary); border-style: solid; transition: box-shadow 160ms ease; }
 .media-action:hover, .media-action:focus-visible { filter: brightness(.96); box-shadow: 0 3px 9px rgb(0 0 0 / 12%); }
 .media-dialog-button:hover { background: var(--code-bg); }
 .media-action:active, .media-dialog-button:active { filter: brightness(.9); box-shadow: inset 0 1px 3px rgb(0 0 0 / 20%); }
+@media (hover: hover) and (pointer: fine) {
+  .media-action:hover:not(:active) {
+    filter: none;
+    box-shadow: 0 0 0 2px var(--theme), 0 0 0 3px var(--secondary), 0 4px 10px rgb(0 0 0 / 16%);
+  }
+  .media-action-facebook:hover:not(:active) { background: #0d448c; border-color: #0d448c; }
+  .media-action-copy:hover:not(:active) { background: var(--secondary); border-color: var(--secondary); color: var(--theme); }
+  .media-action-original:hover:not(:active) { background: var(--primary); border-color: var(--primary); color: var(--theme); }
+}
 .media-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 44px; }
 .media-copy-status { font-size: 13px; line-height: 1.3; color: var(--primary); }
 .media-page-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 13px; text-decoration: underline; padding: 8px 4px; white-space: nowrap; border: 1px solid transparent; border-radius: 6px; transition: background-color 160ms ease, border-color 160ms ease; }

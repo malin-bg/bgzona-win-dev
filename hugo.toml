@@ -7,6 +7,7 @@ canonifyURLs = true
 relativeURLs = false
 
 [params]
+  mainSections = ["statii"]
   ShowReadingTime = false
   ShowPostNavLinks = false
   hideMeta = true

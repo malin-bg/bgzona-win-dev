@@ -2,6 +2,8 @@
 from pathlib import Path
 from urllib.parse import urlsplit,parse_qs,urljoin
 import json,html,xml.etree.ElementTree as ET
+from html.parser import HTMLParser
+import subprocess,tempfile
 from html_probe import Doc,inspect_image,local
 from media_support import fhash,atomic,data
 BASE="https://dev.bgzona.win/"
@@ -15,11 +17,75 @@ class Gallery(Doc):
  def handle_endtag(self,t):
   if t=='figure':self.current=None
 
+class HomeCards(HTMLParser):
+ """Only direct PaperMod article cards inside main, never introduction links."""
+ def __init__(self,text):
+  super().__init__(convert_charrefs=True);self.stack=[];self.cards=[];self.current=None;self.feed(text)
+ def handle_starttag(self,tag,attrs):
+  a=dict(attrs);classes=a.get('class','').split()
+  if (tag=='article' and self.stack and self.stack[-1][0]=='main'
+      and 'main' in self.stack[-1][1].get('class','').split()
+      and {'first-entry','post-entry'}.intersection(classes)):
+   self.current=[];self.cards.append(self.current)
+  if tag=='a' and self.current is not None and 'entry-link' in classes:self.current.append(a.get('href',''))
+  if tag not in {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}:self.stack.append((tag,a))
+ def handle_endtag(self,tag):
+  if tag=='article':self.current=None
+  for i in range(len(self.stack)-1,-1,-1):
+   if self.stack[i][0]==tag:self.stack=self.stack[:i];break
+
+def homepage_article_cards(buildroot):
+ """Ask Hugo for current eligible articles independently of the tested home HTML.
+
+ The existing build receipt supplies the same source and pinned Hugo. The probe
+ uses ordinary (media-disabled) content, Hugo publication/cascade/type rules,
+ PaperMod's hiddenInHomeList filter and default ordering. Its JSON/layout/cache
+ stay outside candidate/public and outside source; nothing enters the artifact.
+ """
+ command=json.loads((buildroot/'build-receipt.json').read_bytes())['command']
+ site=Path(command[command.index('--source')+1]).resolve()
+ config=command[command.index('--config')+1].split(',')[0]
+ probe=Path(tempfile.mkdtemp(prefix='article-inventory-',dir=buildroot.parent))
+ (probe/'layouts').mkdir()
+ template='''{{- $pages := where site.RegularPages "Type" "statii" -}}
+{{- $pages = where $pages "Params.hiddenInHomeList" "!=" "true" -}}
+{{- $records := slice -}}
+{{- range $pages -}}{{- $records = $records | append .Permalink -}}{{- end -}}
+{{- $records | jsonify -}}
+'''
+ (probe/'layouts/home.json').write_text(template,encoding='utf8')
+ overlay='resourceDir = '+json.dumps((probe/'resources').as_posix())+'\n[outputs]\nhome = ["JSON"]\n[params.media]\nenabled = false\n'
+ for source in (probe/'layouts',site/'layouts'):
+  overlay+='[[module.mounts]]\nsource = '+json.dumps(source.as_posix())+'\ntarget = "layouts"\n'
+ (probe/'config.toml').write_text(overlay,encoding='utf8')
+ cmd=[command[0],'--source',str(site),'--config',config+','+str(probe/'config.toml'),
+      '--destination',str(probe/'public'),'--cacheDir',str(probe/'cache'),
+      '--baseURL',BASE,'--environment','production','--noBuildLock']
+ q=subprocess.run(cmd,capture_output=True,text=True,encoding='utf8',errors='replace',timeout=120)
+ (probe/'hugo.log').write_text(json.dumps(cmd)+'\n'+q.stdout+q.stderr,encoding='utf8')
+ if q.returncode:return False,{'error':'article inventory Hugo failed','log':str(probe/'hugo.log')}
+ eligible=json.loads((probe/'public/index.json').read_bytes())
+ cards=HomeCards((buildroot/'public/index.html').read_text(encoding='utf8')).cards
+ urls=[card[0] for card in cards if len(card)==1];expected=eligible[:10]
+ valid=isinstance(eligible,list) and len(eligible)>0 and len(eligible)==len(set(eligible))
+ valid=valid and len(cards)==min(10,len(eligible)) and len(urls)==len(cards) and len(urls)==len(set(urls)) and urls==expected
+ bad=[];out=(buildroot/'public').resolve()
+ for url in urls:
+  u=urlsplit(url);target=(out/u.path.lstrip('/')/'index.html').resolve()
+  if (u.scheme!='https' or u.netloc!='dev.bgzona.win' or not u.path.startswith('/statii/')
+      or u.query or u.fragment or not target.is_relative_to(out) or not target.is_file()):bad.append(url);continue
+  doc=Doc(target.read_text(encoding='utf8'))
+  if (doc.metadata()['canonical']!=[url] or not any('post-single' in a.get('class','').split() for a in doc.select('article'))):bad.append(url)
+ return bool(valid and not bad),{'eligible':len(eligible),'expected':len(expected),'actual':len(cards),
+        'expected_urls':expected,'actual_urls':urls,'invalid_targets':bad,'inventory':str(probe/'public/index.json')}
+
 def validate(buildroot,baseline_output,report):
  manifest=json.loads((buildroot/'validated-manifest.json').read_bytes())
  states=json.loads((buildroot/'build-receipt.json').read_bytes())['states']
  out=buildroot/'public';rows=manifest['items'];result=[];pages={}
  def ck(label,ok,detail=None):result.append({'test':label,'status':'PASS' if ok else 'FAIL','detail':detail})
+ home_ok,home_detail=homepage_article_cards(buildroot)
+ ck('homepage-article-cards',home_ok,home_detail)
  galleries={col:Gallery((out/col/'index.html').read_text(encoding='utf8')) for col in ('kolaji','poslaniya')}
  locs=[x.text for x in ET.parse(out/'sitemap.xml').iter() if x.tag.endswith('loc')]
  slides=[urljoin(BASE,u) for u in json.loads((out/'media/slideshow.json').read_text(encoding='utf8'))['images']]
