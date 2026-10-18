@@ -1,11 +1,15 @@
-
-<h1>{{ .Title }}</h1>
-{{ .Content }}
-<div id="media-gallery" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
-{{ range .RegularPages.ByParam "number" }}
-<figure data-media-id="{{ .Params.stem }}">
-<a class="full-preview" data-full="{{ .Params.full }}" data-page="{{ .Permalink }}" href="{{ .Params.full }}">
-<img loading="lazy" src="{{ .Params.thumb }}" width="{{ .Params.thumbwidth }}" height="{{ .Params.thumbheight }}" style="width:100%;height:220px;object-fit:contain" alt="{{ .Title }}"></a>
-<figcaption><a class="page-link" href="{{ .Permalink }}">Страница / Сподели {{ .Params.stem }}</a></figcaption>
-</figure>
-{{ end }}</div>
+<section class="bgz-media-collection" data-media-collection="{{ .Section }}" aria-labelledby="media-collection-title">
+  <header class="page-header"><h1 id="media-collection-title">{{ .Title }}</h1></header>
+  {{ with .Content }}<div class="post-content">{{ . }}</div>{{ end }}
+  <div id="media-gallery" class="media-grid">
+    {{ range .RegularPages.ByParam "number" }}
+    <figure class="media-card" data-media-id="{{ .Params.stem }}">
+      <a class="full-preview media-thumbnail" data-full="{{ .Params.full }}" data-page="{{ .Permalink }}" data-label="{{ .Title }}" href="{{ .Params.full }}" aria-label="Увеличи {{ .Title }}" aria-haspopup="dialog" aria-controls="media-lightbox">
+        <img loading="lazy" src="{{ .Params.thumb }}" width="{{ .Params.thumbwidth }}" height="{{ .Params.thumbheight }}" alt="{{ .Title }}">
+      </a>
+      {{ with .Params.usertext }}<figcaption class="media-card-description">{{ . }}</figcaption>{{ end }}
+      <div class="media-card-controls">{{ partial "bgz-media/actions.html" (dict "page" . "single" false) }}</div>
+    </figure>
+    {{ end }}
+  </div>
+</section>

@@ -8,12 +8,13 @@
   {{ $src := resources.Get (printf "bgz-media/%s" .source) }}
   {{ if not $src }}{{ errorf "BGZ_MEDIA_MISSING_ORIGINAL %s" .source }}{{ else }}
     {{ $label := "Колаж" }}{{ if eq .collection "poslaniya" }}{{ $label = "Послание" }}{{ end }}
+    {{ $usertext := "" }}
     {{ $desc := printf "%s %05d" $label (int .number) }}
     {{ if .txt }}
       {{ $t := resources.Get (printf "bgz-media/%s" .txt) }}
       {{ if not $t }}{{ errorf "BGZ_MEDIA_MISSING_TXT %s" .txt }}
       {{ else }}{{ $v := strings.TrimSpace (strings.TrimPrefix "\ufeff" $t.Content) }}
-      {{ if $v }}{{ $desc = $v }}{{ end }}{{ end }}
+      {{ if $v }}{{ $desc = $v }}{{ $usertext = $v }}{{ end }}{{ end }}
     {{ end }}
     {{ $path := printf "%s/full/%s%s" .collection .stem .ext }}
     {{ if .versioned }}{{ $path = printf "%s/full/%s-r%04d-%s%s" .collection .stem (int .revision) (substr .sha256 0 12) .ext }}{{ end }}
@@ -42,7 +43,7 @@
     {{ if eq .collection "poslaniya" }}{{ $slug = printf "p-%05d" (int .number) }}{{ end }}
     {{ $params := dict "media" true "collection" .collection "number" .number "stem" .stem "revision" .revision
         "originalHash" .sha256 "full" $full "thumb" $thumb.RelPermalink "thumbWidth" $thumb.Width "thumbHeight" $thumb.Height
-        "ogurl" $ogurl "ogkind" $ogkind "text" $desc "slideshow" .slideshow
+        "ogurl" $ogurl "ogkind" $ogkind "text" $desc "usertext" $usertext "slideshow" .slideshow
         "cover" (dict "image" $ogurl "hidden" true) "images" (slice $ogurl) }}
     {{ $page := dict "path" $slug "kind" "page" "type" "media" "layout" "single"
         "title" (printf "%s %05d" $label (int .number)) "description" $desc
