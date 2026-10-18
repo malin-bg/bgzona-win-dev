@@ -1,0 +1,11 @@
+
+<h1>{{ .Title }}</h1>
+{{ .Content }}
+<div id="media-gallery" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+{{ range .RegularPages.ByParam "number" }}
+<figure data-media-id="{{ .Params.stem }}">
+<a class="full-preview" data-full="{{ .Params.full }}" data-page="{{ .Permalink }}" href="{{ .Params.full }}">
+<img loading="lazy" src="{{ .Params.thumb }}" width="{{ .Params.thumbwidth }}" height="{{ .Params.thumbheight }}" style="width:100%;height:220px;object-fit:contain" alt="{{ .Title }}"></a>
+<figcaption><a class="page-link" href="{{ .Permalink }}">Страница / Сподели {{ .Params.stem }}</a></figcaption>
+</figure>
+{{ end }}</div>

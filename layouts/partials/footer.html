@@ -17,6 +17,9 @@
   </span>
 </footer>
 
+{{ if site.Params.media.enabled }}
+{{ partial "bgz-media/runtime.html" . }}
+{{ else }}
 <script>
 (function () {
   const ASSETS_BASE = "{{ .Site.Params.assetsBaseURL }}";
@@ -255,3 +258,4 @@
   init();
 })();
 </script>
+{{ end }}

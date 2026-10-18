@@ -1,0 +1,16 @@
+
+<dialog id="media-lightbox" aria-label="Оригинално изображение">
+<button id="lightbox-close">Затвори</button>
+<img id="lightbox-image" alt="Оригинал" style="max-width:85vw;max-height:75vh;object-fit:contain">
+<a id="lightbox-page">Страница / Сподели</a>
+</dialog>
+<dialog id="slideshow"><img id="slide-image" alt="Колаж" style="width:85vw;height:80vh;object-fit:contain"></dialog>
+{{ $slides := slice }}
+{{ range where site.RegularPages "Type" "media" }}
+{{ if and (eq .Params.collection "kolaji") .Params.slideshow }}
+{{ $slides = $slides | append .Params.full }}
+{{ end }}{{ end }}
+{{ $manifest := dict "schema_version" 1 "images" $slides | jsonify | resources.FromString "media/slideshow.json" }}
+<script>window.mediaConfig={slideshowURL:{{ $manifest.RelPermalink }},idleMs:360000,slideMs:30000};</script>
+{{ $script := resources.Get "js/bgz-media.js" | fingerprint }}
+<script src="{{ $script.RelPermalink }}" defer></script>

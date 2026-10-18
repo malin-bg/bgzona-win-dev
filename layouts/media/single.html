@@ -1,0 +1,17 @@
+
+{{ define "main" }}
+<article data-media-id="{{ .Params.stem }}" data-revision="{{ .Params.revision }}" data-og-kind="{{ .Params.ogkind }}">
+<h1>{{ .Title }}</h1>
+<a class="full-preview" data-full="{{ .Params.full }}" data-page="{{ .Permalink }}" href="{{ .Params.full }}">
+<img class="media-main" src="{{ .Params.full }}" alt="{{ .Title }}" style="max-width:100%;max-height:70vh;object-fit:contain"></a>
+<pre class="media-description" style="white-space:pre-wrap">{{ .Params.text }}</pre>
+<nav class="share-actions">
+<a id="facebook-share" href="{{ printf "https://www.facebook.com/sharer/sharer.php?u=%s" (urlquery .Permalink) }}">Сподели във Facebook</a>
+<button id="copy-link" data-url="{{ .Permalink }}">Копирай връзката</button>
+<a id="open-original" href="{{ .Params.full }}">Отвори оригинала</a>
+</nav>
+<label>Постоянна връзка <input id="share-url" readonly value="{{ .Permalink }}"></label>
+<span id="copy-status" role="status"></span>
+<noscript>JavaScript е изключен: копирайте постоянната връзка от полето; Facebook и оригиналът са обикновени връзки.</noscript>
+</article>
+{{ end }}
