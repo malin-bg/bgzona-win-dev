@@ -2,7 +2,8 @@
   <header class="page-header"><h1 id="media-collection-title">{{ if eq .Section "poslaniya" }}Послания, цитати и размисли{{ else }}{{ .Title }}{{ end }}</h1></header>
   {{ with .Content }}<div class="post-content">{{ . }}</div>{{ end }}
   <div id="media-gallery" class="media-grid">
-    {{ range .RegularPages.ByParam "number" }}
+    {{ $pager := .Paginate (.RegularPages.ByParam "number") 50 }}
+    {{ range $pager.Pages }}
     <figure class="media-card" data-media-id="{{ .Params.stem }}">
       <a class="full-preview media-thumbnail" data-full="{{ .Params.full }}" data-page="{{ .Permalink }}" data-label="{{ .Title }}" href="{{ .Params.full }}" aria-label="Увеличи {{ .Title }}" aria-haspopup="dialog" aria-controls="media-lightbox">
         <img loading="lazy" src="{{ .Params.thumb }}" width="{{ .Params.thumbwidth }}" height="{{ .Params.thumbheight }}" alt="{{ .Title }}">
@@ -12,4 +13,5 @@
     </figure>
     {{ end }}
   </div>
+  {{ partial "bgz-media/pagination.html" $pager }}
 </section>

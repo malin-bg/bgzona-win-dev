@@ -148,3 +148,10 @@ main.main:has(> .bgz-media-page) { max-width: 1200px; }
 @media (prefers-reduced-motion: reduce) {
   .media-action, .media-page-link { transition: none; }
 }
+
+/* Native media pager; existing card styles and focus rules remain unchanged. */
+.media-pagination { margin-block: 24px; }
+.media-pagination ul { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 0; list-style: none; }
+.media-pagination :is(a, span) { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; }
+.media-pagination a:hover { background: var(--code-bg); }
+.media-pagination [aria-current="page"] { background: var(--primary); color: var(--theme); font-weight: 600; }

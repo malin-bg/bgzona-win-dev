@@ -9,13 +9,89 @@ from media_support import fhash,atomic,data
 BASE="https://dev.bgzona.win/"
 
 class Gallery(Doc):
- def __init__(self,s):self.current=None;self.media={};super().__init__(s)
+ def __init__(self,s):
+  self.current=None;self.media={};self.order=[];self.navigation=[];self.navlinks=[];self.numbers=[];self.navtext=[];self.in_pagination=False
+  super().__init__(s)
  def handle_starttag(self,t,attrs):
   super().handle_starttag(t,attrs);a=dict(attrs)
-  if t=='figure' and a.get('data-media-id'):self.current=a['data-media-id'];self.media[self.current]={}
-  if self.current and t=='img':self.media[self.current]['thumb']=a['src']
+  if t=='nav' and 'media-pagination' in a.get('class','').split():self.in_pagination=True;self.navigation.append(a)
+  if self.in_pagination:
+   if t=='a':self.navlinks.append(a)
+   if t in ('a','span') and 'data-page' in a:self.numbers.append((t,a))
+  if t=='figure' and a.get('data-media-id'):
+   self.current=a['data-media-id'];self.order.append(self.current);self.media[self.current]={'links':[]}
+  if self.current and t=='img':self.media[self.current].update(thumb=a.get('src'),image=a)
+  if self.current and t=='a':self.media[self.current]['links'].append(a)
+ def handle_data(self,s):
+  if self.in_pagination:self.navtext.append(s)
  def handle_endtag(self,t):
   if t=='figure':self.current=None
+  if t=='nav':self.in_pagination=False
+
+def gallery_pages(out,rows,ck):
+ """Check real pagers, then aggregate their cards for existing per-image checks."""
+ galleries={}
+ for col in ('kolaji','poslaniya'):
+  ordered=sorted((r for r in rows if r['collection']==col),key=lambda r:r['number'])
+  expected_ids=[r['stem'] for r in ordered];count=max(1,(len(ordered)+49)//50)
+  paths=[f'{col}/index.html']+[f'{col}/page/{n}/index.html' for n in range(2,count+1)]
+  found=[f'{col}/index.html'] if (out/col/'index.html').is_file() else []
+  found += [p.relative_to(out).as_posix() for p in (out/col/'page').glob('*/index.html') if p.parent.name!='1']
+  ck('gallery-pages:'+col,len(found)==count and set(found)==set(paths),{'expected':paths,'actual':found})
+  combined=Gallery('');root_twitter=None
+  for number,rel in enumerate(paths,1):
+   path=out/rel
+   if not path.is_file():continue
+   g=Gallery(path.read_text(encoding='utf8'));url=BASE+rel.removesuffix('index.html')
+   expected_slice=expected_ids[(number-1)*50:number*50]
+   ck('gallery-page-order:'+rel,g.order==expected_slice and len(g.order)<=50,{'expected':expected_slice,'actual':g.order})
+   ck('gallery-page-canonical:'+rel,g.metadata()['canonical']==[url])
+   ck('gallery-page-OG:'+rel,[m.get('content') for m in g.select('meta',property='og:url')]==[url])
+   ck('gallery-page-robots:'+rel,[m.get('content') for m in g.select('meta',name='robots')]==['noindex, follow'])
+   twitter=[a for a in g.select('meta') if a.get('name','').startswith('twitter:') and a.get('name')!='twitter:url']
+   if root_twitter is None:root_twitter=twitter
+   ck('gallery-page-Twitter:'+rel,bool(g.select('meta',name='twitter:card')) and twitter==root_twitter
+      and all(m.get('content','').startswith(BASE) for m in g.select('meta',name='twitter:image'))
+      and all(m.get('content')==url for m in g.select('meta',name='twitter:url')))
+   expected_hrefs=[]
+   pager_url=lambda n:BASE+col+('/' if n==1 else f'/page/{n}/')
+   if number>1:expected_hrefs.append(pager_url(number-1))
+   expected_hrefs += [pager_url(n) for n in range(1,count+1) if n!=number]
+   if number<count:expected_hrefs.append(pager_url(number+1))
+   ck('gallery-navigation:'+rel,([a.get('href') for a in g.navlinks]==expected_hrefs
+      and len(g.navigation)==(1 if count>1 else 0)
+      and all(a.get('aria-label')=='Страници на галерията' for a in g.navigation)))
+   expected_numbers=[str(n) for n in range(1,count+1)] if count>1 else []
+   ck('gallery-page-numbers:'+rel,[a.get('data-page') for t,a in g.numbers]==expected_numbers
+      and all(a.get('aria-label')=='Страница '+a['data-page'] and
+       ((t=='span' and a.get('aria-current')=='page') if a['data-page']==str(number) else (t=='a' and a.get('href')==pager_url(int(a['data-page'])))) for t,a in g.numbers))
+   ck('gallery-prev-next:'+rel,[a.get('href') for a in g.navlinks if a.get('rel')=='prev']==([pager_url(number-1)] if number>1 else [])
+      and [a.get('href') for a in g.navlinks if a.get('rel')=='next']==([pager_url(number+1)] if number<count else [])
+      and (number==1 or 'Предишна' in ''.join(g.navtext)) and (number==count or 'Следваща' in ''.join(g.navtext)))
+   ck('gallery-navigation-targets:'+rel,all((out/urlsplit(a.get('href','')).path.lstrip('/')/'index.html').is_file()
+      and urlsplit(a.get('href','')).netloc==urlsplit(BASE).netloc and not urlsplit(a.get('href','')).query and not urlsplit(a.get('href','')).fragment for a in g.navlinks))
+   for key,card in g.media.items():
+    r=next((r for r in ordered if r['stem']==key),None)
+    ck('gallery-card-known:'+key,r is not None)
+    if r is None:continue
+    page=BASE+col+'/'+('kolaj-' if col=='kolaji' else 'p-')+f'{r["number"]:05d}/'
+    preview=[a for a in card['links'] if 'full-preview' in a.get('class','').split()]
+    links=[a for a in card['links'] if 'media-page-link' in a.get('class','').split()]
+    ck('gallery-card-page:'+key,len(preview)==len(links)==1 and preview[0].get('data-page')==page and links[0].get('href')==page
+       and (out/urlsplit(page).path.lstrip('/')/'index.html').is_file())
+    image=card.get('image',{})
+    ck('gallery-card-lazy:'+key,image.get('loading')=='lazy' and str(image.get('width','')).isdigit() and str(image.get('height','')).isdigit())
+   combined.order+=g.order;combined.media.update(g.media)
+  ck('gallery-complete-order:'+col,combined.order==expected_ids and len(combined.order)==len(set(combined.order)),{'expected':len(expected_ids),'actual':len(combined.order)})
+  alias=out/col/'page/1/index.html'
+  if expected_ids:
+   ck('gallery-page-one-alias:'+col,alias.is_file())
+  if alias.is_file():
+   d=Doc(alias.read_text(encoding='utf8'));root_url=BASE+col+'/'
+   ck('gallery-page-one-redirect:'+col,d.metadata()['canonical']==[root_url] and [m.get('content') for m in d.select('meta',**{'http-equiv':'refresh'})]==['0; url='+root_url])
+  galleries[col]=combined
+ return galleries
+
 
 class HomeCards(HTMLParser):
  """Only direct PaperMod article cards inside main, never introduction links."""
@@ -86,7 +162,7 @@ def validate(buildroot,baseline_output,report):
  def ck(label,ok,detail=None):result.append({'test':label,'status':'PASS' if ok else 'FAIL','detail':detail})
  home_ok,home_detail=homepage_article_cards(buildroot)
  ck('homepage-article-cards',home_ok,home_detail)
- galleries={col:Gallery((out/col/'index.html').read_text(encoding='utf8')) for col in ('kolaji','poslaniya')}
+ galleries=gallery_pages(out,rows,ck)
  locs=[x.text for x in ET.parse(out/'sitemap.xml').iter() if x.tag.endswith('loc')]
  slides=[urljoin(BASE,u) for u in json.loads((out/'media/slideshow.json').read_text(encoding='utf8'))['images']]
  expected_slides=[]
@@ -102,6 +178,7 @@ def validate(buildroot,baseline_output,report):
   source=buildroot/'media'/r['source'];sp=inspect_image(source);op=inspect_image(fp)
   ck('format-animation:'+key,all(sp[k]==op[k] for k in ('format','frames','durations_ms','loop','frame_pixel_hashes')))
   tu=galleries[col].media.get(key,{}).get('thumb');ck('thumbnail-present:'+key,bool(tu))
+  if not tu:continue
   tp=inspect_image(local(out,tu));w,h=sp['size'];tw,th=tp['size'];scale=min(1,800/w,800/h)
   ck('thumbnail-fit-no-crop-upscale:'+key,tw<=800 and th<=800 and tw<=w and th<=h and abs(tw-w*scale)<=1 and abs(th-h*scale)<=1)
   ck('thumbnail-separate-static:'+key,local(out,tu)!=fp and tp['frames']==1 and tp['format']==('PNG' if r['alpha'] else 'JPEG'))

@@ -1,0 +1,9 @@
+{{ if gt .TotalPages 1 }}
+<nav class="media-pagination" aria-label="Страници на галерията">
+  <ul>
+    {{ if .HasPrev }}<li><a href="{{ .Prev.URL | absURL }}" rel="prev">Предишна</a></li>{{ end }}
+    {{ range .Pagers }}<li>{{ if eq .PageNumber $.PageNumber }}<span data-page="{{ .PageNumber }}" aria-current="page" aria-label="Страница {{ .PageNumber }}">{{ .PageNumber }}</span>{{ else }}<a href="{{ .URL | absURL }}" data-page="{{ .PageNumber }}" aria-label="Страница {{ .PageNumber }}">{{ .PageNumber }}</a>{{ end }}</li>{{ end }}
+    {{ if .HasNext }}<li><a href="{{ .Next.URL | absURL }}" rel="next">Следваща</a></li>{{ end }}
+  </ul>
+</nav>
+{{ end }}
