@@ -6,7 +6,20 @@
         "main"
       ]
     },
-    "workflow_dispatch": {}
+    "workflow_dispatch": {
+      "inputs": {
+        "accepted_cid": {
+          "type": "string",
+          "required": false,
+          "default": ""
+        },
+        "input_trust": {
+          "type": "string",
+          "required": false,
+          "default": ""
+        }
+      }
+    }
   },
   "permissions": {
     "contents": "read"
@@ -20,7 +33,7 @@
   },
   "jobs": {
     "build": {
-      "if": "github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main'",
+      "if": "github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.repository_id == '1149689018' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && ((github.actor_id == '353092585' && github.run_attempt == 1 && inputs.accepted_cid != '' && inputs.input_trust != '') || (github.actor_id == '252877943' && inputs.accepted_cid == '' && inputs.input_trust == ''))))",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 15,
       "steps": [
@@ -52,7 +65,7 @@
         {
           "name": "Trusted input, build, current acceptance and seal",
           "shell": "bash",
-          "run": "set -euo pipefail\ntrust=tools/media/input-trust.json\n[[ -f \"$trust\" && ! -L \"$trust\" ]]\ncid=\"$(python -B -c 'import json,re,sys; v=json.load(open(sys.argv[1],encoding=\"utf8\"))[\"cid\"]; assert re.fullmatch(\"[0-9a-f]{64}\",v); print(v)' \"$trust\")\"\npython -B tools/media/delivery.py --work \"$RUNNER_TEMP/bgz-delivery\" --hugo \"$RUNNER_TEMP/bgz-hugo/hugo\" --accepted-cid \"$cid\"\npython -B - \"$cid\" <<'PY'\nimport json,os,re,sys\nfrom pathlib import Path\nseal=Path(os.environ['RUNNER_TEMP'])/'bgz-delivery'/'site-seal.json'\nfiles={r['path']:r['sha256'] for r in json.loads(seal.read_bytes())['files']}\nog,=[p for p in files if re.fullmatch(r'poslaniya/og/bgzona-m-00019-[0-9a-f]{12}\\.(png|jpg)',p)]\nwith open(os.environ['GITHUB_OUTPUT'],'a',encoding='ascii') as f:\n    for k,v in dict(cid=sys.argv[1],page_sha=files['poslaniya/p-00019/index.html'],\n                    og_path=og,og_sha=files[og],version_sha=files['media-version.json']).items():\n        f.write(f'{k}={v}\\n')\nPY",
+          "run": "set -euo pipefail\ntrust=tools/media/input-trust.json\nextra=()\nif [[ \"$GITHUB_EVENT_NAME\" == workflow_dispatch && \"$GITHUB_ACTOR_ID\" == 353092585 ]]; then\n  trust=\"$RUNNER_TEMP/bgz-c3-input-trust.json\"\n  python -B - \"$trust\" <<'PY'\nimport hashlib,json,os,re,sys\nfrom pathlib import Path\nevent=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_bytes())\nassert event['sender']['id']==353092585 and event['repository']['id']==1149689018\nparams=event['inputs']\nassert set(params)=={'accepted_cid','input_trust'}\nraw=params['input_trust'].encode('utf-8')\nassert 0<len(raw)<=8192 and re.fullmatch('[0-9a-f]{64}',params['accepted_cid'])\nobj=json.loads(raw)\ndef data(x):\n    return json.dumps(x,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()\nassert data(obj)==raw and obj['cid']==params['accepted_cid']\nassert hashlib.sha256(data(obj['accepted'])).hexdigest()==obj['cid']\nPath(sys.argv[1]).write_bytes(raw)\nPY\n  extra=(--c3-trust \"$trust\")\nfi\n[[ -f \"$trust\" && ! -L \"$trust\" ]]\ncid=\"$(python -B -c 'import json,re,sys; v=json.load(open(sys.argv[1],encoding=\"utf8\"))[\"cid\"]; assert re.fullmatch(\"[0-9a-f]{64}\",v); print(v)' \"$trust\")\"\npython -B tools/media/delivery.py --work \"$RUNNER_TEMP/bgz-delivery\" --hugo \"$RUNNER_TEMP/bgz-hugo/hugo\" --accepted-cid \"$cid\" \"${extra[@]}\"\npython -B - \"$cid\" <<'PY'\nimport json,os,re,sys\nfrom pathlib import Path\nseal=Path(os.environ['RUNNER_TEMP'])/'bgz-delivery'/'site-seal.json'\nfiles={r['path']:r['sha256'] for r in json.loads(seal.read_bytes())['files']}\noriginal='poslaniya/full/bgzona-m-00019.png'\nog,=[p for p in files if re.fullmatch(r'poslaniya/og/bgzona-m-00019-[0-9a-f]{12}\\.(png|jpg)',p)]\nwith open(os.environ['GITHUB_OUTPUT'],'a',encoding='ascii') as f:\n    for k,v in dict(cid=sys.argv[1],page_sha=files['poslaniya/p-00019/index.html'],\n                    og_path=og,og_sha=files[og],original_sha=files[original],\n                    version_sha=files['media-version.json']).items():\n        f.write(f'{k}={v}\\n')\nPY",
           "id": "input"
         },
         {
@@ -75,7 +88,8 @@
         "page_sha": "${{ steps.input.outputs.page_sha }}",
         "og_path": "${{ steps.input.outputs.og_path }}",
         "og_sha": "${{ steps.input.outputs.og_sha }}",
-        "version_sha": "${{ steps.input.outputs.version_sha }}"
+        "version_sha": "${{ steps.input.outputs.version_sha }}",
+        "original_sha": "${{ steps.input.outputs.original_sha }}"
       }
     },
     "deploy": {
@@ -108,11 +122,13 @@
             "PAGE_SHA": "${{ needs.build.outputs.page_sha }}",
             "OG_PATH": "${{ needs.build.outputs.og_path }}",
             "OG_SHA": "${{ needs.build.outputs.og_sha }}",
-            "VERSION_SHA": "${{ needs.build.outputs.version_sha }}"
+            "VERSION_SHA": "${{ needs.build.outputs.version_sha }}",
+            "ORIGINAL_SHA": "${{ needs.build.outputs.original_sha }}"
           },
-          "run": "set -euo pipefail\npython -B - <<'PY'\nimport hashlib,json,os,re,time\nfrom urllib.request import Request,urlopen\nbase='https://dev.bgzona.win/'\ncid=os.environ['CID']\nog=os.environ['OG_PATH']\npairs={'media-version.json':os.environ['VERSION_SHA'],'poslaniya/p-00019/':os.environ['PAGE_SHA'],og:os.environ['OG_SHA']}\nassert all(re.fullmatch('[0-9a-f]{64}',v) for v in [cid,*pairs.values()])\nassert re.fullmatch(r'poslaniya/og/bgzona-m-00019-[0-9a-f]{12}\\.(png|jpg)',og)\ndeadline=time.monotonic()+90\nwhile True:\n    try:\n        for path,wanted in pairs.items():\n            request=Request(base+path+'?cid='+cid,headers={'Cache-Control':'no-cache'})\n            with urlopen(request,timeout=8) as response:\n                assert response.status==200 and response.geturl().split('?')[0]==base+path\n                raw=response.read(8_000_001)\n            assert len(raw)<=8_000_000 and hashlib.sha256(raw).hexdigest()==wanted\n            if path=='media-version.json':\n                assert json.loads(raw)['cid']==cid\n        print('PUBLIC_DEV_VERIFIED',cid,base+'poslaniya/p-00019/')\n        break\n    except Exception:\n        if time.monotonic()>=deadline:\n            raise SystemExit('WAIT_VISIBILITY: independently read back the same deployment')\n        time.sleep(5)\nPY"
+          "run": "set -euo pipefail\npython -B - <<'PY'\nimport hashlib,json,os,re,time\nfrom urllib.request import Request,urlopen\nbase='https://dev.bgzona.win/'\ncid=os.environ['CID']\nog=os.environ['OG_PATH']\npairs={'media-version.json':os.environ['VERSION_SHA'],'poslaniya/p-00019/':os.environ['PAGE_SHA'],og:os.environ['OG_SHA'],\n       'poslaniya/full/bgzona-m-00019.png':os.environ['ORIGINAL_SHA']}\nassert all(re.fullmatch('[0-9a-f]{64}',v) for v in [cid,*pairs.values()])\nassert re.fullmatch(r'poslaniya/og/bgzona-m-00019-[0-9a-f]{12}\\.(png|jpg)',og)\ndeadline=time.monotonic()+90\nwhile True:\n    try:\n        for path,wanted in pairs.items():\n            request=Request(base+path+'?cid='+cid,headers={'Cache-Control':'no-cache'})\n            with urlopen(request,timeout=8) as response:\n                assert response.status==200 and response.geturl().split('?')[0]==base+path\n                raw=response.read(8_000_001)\n            assert len(raw)<=8_000_000 and hashlib.sha256(raw).hexdigest()==wanted\n            if path=='media-version.json':\n                assert json.loads(raw)['cid']==cid\n        print('PUBLIC_DEV_VERIFIED',cid,base+'poslaniya/p-00019/')\n        break\n    except Exception:\n        if time.monotonic()>=deadline:\n            raise SystemExit('WAIT_VISIBILITY: independently read back the same deployment')\n        time.sleep(5)\nPY"
         }
       ]
     }
-  }
+  },
+  "run-name": "DEV ${{ inputs.accepted_cid || github.sha }}"
 }

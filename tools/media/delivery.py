@@ -68,6 +68,8 @@ def obtain(lock, local_archive=None, *, provider_repository=REPOSITORY):
         release = json.loads(get(api, 2_000_000))
         require(release['id'] == provider['release_id'] and release['tag_name'] == provider['tag']
                 and release['draft'] is False and release['prerelease'] is False, 'PROVIDER_RELEASE')
+        if provider_repository == resolve_input.CONTROL:
+            require(release.get('immutable') is True, 'PROVIDER_RELEASE_IMMUTABLE')
         matches = [a for a in release['assets'] if a['id'] == provider['asset_id']]
         require(len(matches) == 1, 'PROVIDER_ASSET')
         asset = matches[0]
@@ -125,6 +127,32 @@ def run(command, log):
     require(q.returncode == 0, 'BUILD_FAILED: ' + log.name)
 
 
+def verify_c3_edit(accepted, registry):
+    """Verify the exact independently accepted metadata edit before Hugo runs."""
+    base_ledger='b3af46400dcca18296ff7b88314a864b0b24833d'
+    base_assets='b293a4013a3b2969deeff0c833059f38d7107cef'
+    base_witness='beb3b00b2d268bd0d8f415df126ce0f3c71e9c8e'
+    ledger=resolve_input.provider(get,resolve_input.CONTROL,'git/commits/'+accepted['ledger_commit'])
+    require([p['sha'] for p in ledger['parents']]==[base_ledger], 'C3_DEV_LEDGER_PARENT')
+    w=resolve_input.provider(get,resolve_input.ASSETS,'git/commits/'+accepted['witness_commit'])
+    require([p['sha'] for p in w['parents']]==[base_witness], 'C3_DEV_WITNESS_PARENT')
+    old_raw=resolve_input.blob_at(get,resolve_input.ASSETS,'automation-state/registry.json',base_assets)
+    require(digest(old_raw)=='263f4aae11bec845fa2ad3e57633a24a881db2a725d9f443a7a55979b063c6b7',
+            'C3_DEV_BASE_REGISTRY')
+    old=json.loads(old_raw)
+    key='bgzona-m-00019'
+    expected=old['items'] | {key:old['items'][key] | {
+        'description': '\u0422\u0435\u0441\u0442\u043e\u0432\u043e \u043f\u043e\u0441\u043b\u0430\u043d\u0438\u0435 19 \u2013 \u0440\u0435\u0434\u0430\u043a\u0446\u0438\u044f C3.',
+        'description_hash': '376a86f5bdfa39c95a695bdb8429fed4940ed66abdde79470cfb58054b65070a'}}
+    require(registry['items']==expected and registry['counters']==old['counters'] and
+            registry['library_id']==old['library_id'], 'C3_DEV_METADATA_ONLY')
+    record=json.loads(resolve_input.blob_at(get,resolve_input.CONTROL,'records/00000003.json',
+                                          accepted['ledger_commit']))
+    require((record['index'],record['phase'],record['primary_base'],record['previous'])==
+            (3,'staged',base_assets,'728b0a8a3ec296b6060c15b809eb56fff7f48cffd23d60be691ee21bbe8eebf9'),
+            'C3_DEV_ACCEPTED_RECORD')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--site', type=Path, default=Path(__file__).resolve().parents[2])
@@ -132,6 +160,7 @@ def main():
     parser.add_argument('--hugo', default='hugo')
     parser.add_argument('--local-archive', type=Path, help='Isolated local verification ONLY; rejected in Actions')
     parser.add_argument('--accepted-cid', help='Exact reviewed DEV CID from input-trust.json')
+    parser.add_argument('--c3-trust', type=Path, help='Verified ephemeral C3 DEV dispatch input')
     args = parser.parse_args()
     site = checked_absolute(args.site)
     parent = checked_absolute(args.work.parent)
@@ -140,10 +169,17 @@ def main():
             not work.is_relative_to(site) and not site.is_relative_to(work) and
             not any((p / '.git').exists() for p in (parent, *parent.parents)), 'NEW_EXTERNAL_WORK_REQUIRED')
     accepted = None
+    require(args.c3_trust is None or args.accepted_cid is not None, 'C3_DEV_CID_REQUIRED')
     if args.accepted_cid is not None:
         require(args.local_archive is None, 'CID_LOCAL_OVERRIDE_FORBIDDEN')
-        config = json.loads((site / 'tools/media/input-trust.json').read_bytes())
+        trust = args.c3_trust if args.c3_trust else site / 'tools/media/input-trust.json'
+        require(trust.is_file() and not trust.is_symlink() and trust.stat().st_size <= 8192, 'CID_INPUT_FILE')
+        wire = trust.read_bytes()
+        config = json.loads(wire)
+        require(data(config)==wire, 'CID_INPUT_CANONICAL')
         accepted, registry = resolve_input.resolve(config, args.accepted_cid, get)
+        if args.c3_trust:
+            verify_c3_edit(accepted, registry)
         lock = validate_lock(accepted['input'])
         raw = obtain(lock, provider_repository=resolve_input.CONTROL)
     else:
