@@ -16,6 +16,7 @@ from artifact_seal import checked_absolute, require, safe_path, seal, verify, in
 from bridge import derive
 from media_support import atomic, data, digest, fhash
 from acceptance import validate
+import resolve_input
 
 REPOSITORY = 'malin-bg/bgzona-win-dev'
 BASE = 'https://dev.bgzona.win/'
@@ -23,6 +24,10 @@ BASE = 'https://dev.bgzona.win/'
 
 def read_lock(path):
     lock = json.loads(path.read_bytes().decode('utf-8-sig', 'strict'))
+    return validate_lock(lock)
+
+
+def validate_lock(lock):
     require(set(lock) == {'schema', 'repository', 'archive_name', 'archive_sha256', 'bytes',
                          'members', 'source_catalog_sha256', 'expected_files_sha256',
                          'snapshot', 'provider'}, 'LOCK_SCHEMA')
@@ -49,7 +54,7 @@ def get(url, limit):
     return raw
 
 
-def obtain(lock, local_archive=None):
+def obtain(lock, local_archive=None, *, provider_repository=REPOSITORY):
     if local_archive:
         require(os.environ.get('GITHUB_ACTIONS') != 'true', 'LOCAL_OVERRIDE_FORBIDDEN_IN_CI')
         raw = Path(local_archive).read_bytes()
@@ -59,14 +64,14 @@ def obtain(lock, local_archive=None):
                 'PROVIDER_NOT_ACTIVATED: verified Release asset is required; no fallback')
         require(all(type(provider[k]) is int and provider[k] > 0 for k in ('release_id', 'asset_id'))
                 and isinstance(provider['tag'], str) and bool(provider['tag']), 'PROVIDER_INVALID')
-        api = f'https://api.github.com/repos/{REPOSITORY}/releases/{provider["release_id"]}'
+        api = f'https://api.github.com/repos/{provider_repository}/releases/{provider["release_id"]}'
         release = json.loads(get(api, 2_000_000))
         require(release['id'] == provider['release_id'] and release['tag_name'] == provider['tag']
                 and release['draft'] is False and release['prerelease'] is False, 'PROVIDER_RELEASE')
         matches = [a for a in release['assets'] if a['id'] == provider['asset_id']]
         require(len(matches) == 1, 'PROVIDER_ASSET')
         asset = matches[0]
-        url = (f'https://github.com/{REPOSITORY}/releases/download/' +
+        url = (f'https://github.com/{provider_repository}/releases/download/' +
                urllib.parse.quote(provider['tag'], safe='') + '/' + lock['archive_name'])
         require(asset['name'] == lock['archive_name'] and asset['size'] == lock['bytes'] and
                 asset['state'] == 'uploaded' and asset['browser_download_url'] == url, 'PROVIDER_IDENTITY')
@@ -75,7 +80,7 @@ def obtain(lock, local_archive=None):
     return raw
 
 
-def unpack(raw, lock, destination):
+def unpack(raw, lock, destination, *, accepted=False):
     require(not destination.exists(), 'INPUT_DEST_EXISTS')
     with zipfile.ZipFile(BytesIO(raw)) as archive:
         members = archive.infolist()
@@ -89,8 +94,8 @@ def unpack(raw, lock, destination):
                     not stat.S_ISLNK(info.external_attr >> 16), 'ARCHIVE_MEMBER_TYPE')
             require(info.filename.casefold() not in names, 'ARCHIVE_DUPLICATE')
             names.add(info.filename.casefold())
-            require(info.filename.startswith('artifact/') or info.filename in
-                    ('expected-files.json', 'provenance.json'), 'ARCHIVE_PRIVATE_OR_EXTRA')
+            allowed = ('expected-files.json',) if accepted else ('expected-files.json', 'provenance.json')
+            require(info.filename.startswith('artifact/') or info.filename in allowed, 'ARCHIVE_PRIVATE_OR_EXTRA')
             buffers[info.filename] = archive.read(info)
     require(digest(buffers['expected-files.json']) == lock['expected_files_sha256'] and
             digest(buffers['artifact/catalog.json']) == lock['source_catalog_sha256'], 'INPUT_METADATA_SHA')
@@ -126,6 +131,7 @@ def main():
     parser.add_argument('--work', type=Path, required=True)
     parser.add_argument('--hugo', default='hugo')
     parser.add_argument('--local-archive', type=Path, help='Isolated local verification ONLY; rejected in Actions')
+    parser.add_argument('--accepted-cid', help='Exact reviewed DEV CID from input-trust.json')
     args = parser.parse_args()
     site = checked_absolute(args.site)
     parent = checked_absolute(args.work.parent)
@@ -133,10 +139,20 @@ def main():
     require(not work.exists() and not work.is_symlink() and
             not work.is_relative_to(site) and not site.is_relative_to(work) and
             not any((p / '.git').exists() for p in (parent, *parent.parents)), 'NEW_EXTERNAL_WORK_REQUIRED')
-    lock = read_lock(site / 'tools/media/input-lock.json')
-    raw = obtain(lock, args.local_archive)  # Missing/invalid provider fails before any build.
+    accepted = None
+    if args.accepted_cid is not None:
+        require(args.local_archive is None, 'CID_LOCAL_OVERRIDE_FORBIDDEN')
+        config = json.loads((site / 'tools/media/input-trust.json').read_bytes())
+        accepted, registry = resolve_input.resolve(config, args.accepted_cid, get)
+        lock = validate_lock(accepted['input'])
+        raw = obtain(lock, provider_repository=resolve_input.CONTROL)
+    else:
+        lock = read_lock(site / 'tools/media/input-lock.json')
+        raw = obtain(lock, args.local_archive)
     work.mkdir()
-    manifest, states = unpack(raw, lock, work / 'input')
+    manifest, states = unpack(raw, lock, work / 'input', accepted=accepted is not None)
+    if accepted is not None:
+        resolve_input.verify_projection(work / 'input', registry)
     # Baseline is rebuilt from CURRENT content, not a historical article/file allowlist.
     atomic(work / 'baseline.toml', ('resourceDir = ' + json.dumps((work / 'baseline-resources').as_posix()) + '\n').encode())
     run([args.hugo, '--source', str(site), '--config', str(site / 'hugo.toml') + ',' + str(work / 'baseline.toml'),
@@ -149,12 +165,21 @@ def main():
     # Acceptance and seal are in one trusted caller; arbitrary PASS text is not consulted.
     validate(candidate, work / 'baseline', work / 'acceptance.json')
     require(json.loads((candidate / 'validated-manifest.json').read_bytes()) == manifest, 'MANIFEST_CHANGED')
+    if accepted is not None:
+        resolve_input.check_heads(get, accepted)
+        version = candidate / 'public' / 'media-version.json'
+        require(not version.exists() and not version.is_symlink(), 'CID_PUBLIC_PATH_EXISTS')
+        atomic(version, data({'cid': args.accepted_cid, 'channel': 'dev',
+                             'registry_sha256': accepted['registry_sha256']}))
     tree = seal(candidate / 'public', work / 'site-seal.json')
     verify(candidate / 'public', work / 'site-seal.json', tree)
     atomic(work / 'site-tree.sha256', (tree + '\n').encode('ascii'))
     receipt = {'status': 'ACCEPTED_SEALED_UNDEPLOYED', 'archive_sha256': lock['archive_sha256'],
                'tree_sha256': tree, 'snapshot': lock['snapshot'],
                'mode': 'LOCAL_INPUT_TEST' if args.local_archive else 'RELEASE_PROVIDER', 'deployment': False}
+    if accepted is not None:
+        receipt['cid'] = args.accepted_cid
+        receipt['mode'] = 'INDEPENDENT_D3_CID'
     atomic(work / 'delivery-receipt.json', data(receipt))
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
     if summary:

@@ -13,7 +13,7 @@
   },
   "concurrency": {
     "group": "pages",
-    "cancel-in-progress": true
+    "cancel-in-progress": false
   },
   "env": {
     "PYTHONDONTWRITEBYTECODE": "1"
@@ -52,7 +52,8 @@
         {
           "name": "Trusted input, build, current acceptance and seal",
           "shell": "bash",
-          "run": "python -B tools/media/delivery.py --work \"$RUNNER_TEMP/bgz-delivery\" --hugo \"$RUNNER_TEMP/bgz-hugo/hugo\""
+          "run": "set -euo pipefail\ntrust=tools/media/input-trust.json\n[[ -f \"$trust\" && ! -L \"$trust\" ]]\ncid=\"$(python -B -c 'import json,re,sys; v=json.load(open(sys.argv[1],encoding=\"utf8\"))[\"cid\"]; assert re.fullmatch(\"[0-9a-f]{64}\",v); print(v)' \"$trust\")\"\npython -B tools/media/delivery.py --work \"$RUNNER_TEMP/bgz-delivery\" --hugo \"$RUNNER_TEMP/bgz-hugo/hugo\" --accepted-cid \"$cid\"\npython -B - \"$cid\" <<'PY'\nimport json,os,re,sys\nfrom pathlib import Path\nseal=Path(os.environ['RUNNER_TEMP'])/'bgz-delivery'/'site-seal.json'\nfiles={r['path']:r['sha256'] for r in json.loads(seal.read_bytes())['files']}\nog,=[p for p in files if re.fullmatch(r'poslaniya/og/bgzona-m-00019-[0-9a-f]{12}\\.(png|jpg)',p)]\nwith open(os.environ['GITHUB_OUTPUT'],'a',encoding='ascii') as f:\n    for k,v in dict(cid=sys.argv[1],page_sha=files['poslaniya/p-00019/index.html'],\n                    og_path=og,og_sha=files[og],version_sha=files['media-version.json']).items():\n        f.write(f'{k}={v}\\n')\nPY",
+          "id": "input"
         },
         {
           "name": "Verify accepted output immediately before upload",
@@ -68,7 +69,14 @@
             "retention-days": 1
           }
         }
-      ]
+      ],
+      "outputs": {
+        "cid": "${{ steps.input.outputs.cid }}",
+        "page_sha": "${{ steps.input.outputs.page_sha }}",
+        "og_path": "${{ steps.input.outputs.og_path }}",
+        "og_sha": "${{ steps.input.outputs.og_sha }}",
+        "version_sha": "${{ steps.input.outputs.version_sha }}"
+      }
     },
     "deploy": {
       "needs": "build",
@@ -91,6 +99,18 @@
           "with": {
             "artifact_name": "github-pages"
           }
+        },
+        {
+          "name": "Verify public DEV CID, page and OG against the seal",
+          "shell": "bash",
+          "env": {
+            "CID": "${{ needs.build.outputs.cid }}",
+            "PAGE_SHA": "${{ needs.build.outputs.page_sha }}",
+            "OG_PATH": "${{ needs.build.outputs.og_path }}",
+            "OG_SHA": "${{ needs.build.outputs.og_sha }}",
+            "VERSION_SHA": "${{ needs.build.outputs.version_sha }}"
+          },
+          "run": "set -euo pipefail\npython -B - <<'PY'\nimport hashlib,json,os,re,time\nfrom urllib.request import Request,urlopen\nbase='https://dev.bgzona.win/'\ncid=os.environ['CID']\nog=os.environ['OG_PATH']\npairs={'media-version.json':os.environ['VERSION_SHA'],'poslaniya/p-00019/':os.environ['PAGE_SHA'],og:os.environ['OG_SHA']}\nassert all(re.fullmatch('[0-9a-f]{64}',v) for v in [cid,*pairs.values()])\nassert re.fullmatch(r'poslaniya/og/bgzona-m-00019-[0-9a-f]{12}\\.(png|jpg)',og)\ndeadline=time.monotonic()+90\nwhile True:\n    try:\n        for path,wanted in pairs.items():\n            request=Request(base+path+'?cid='+cid,headers={'Cache-Control':'no-cache'})\n            with urlopen(request,timeout=8) as response:\n                assert response.status==200 and response.geturl().split('?')[0]==base+path\n                raw=response.read(8_000_001)\n            assert len(raw)<=8_000_000 and hashlib.sha256(raw).hexdigest()==wanted\n            if path=='media-version.json':\n                assert json.loads(raw)['cid']==cid\n        print('PUBLIC_DEV_VERIFIED',cid,base+'poslaniya/p-00019/')\n        break\n    except Exception:\n        if time.monotonic()>=deadline:\n            raise SystemExit('WAIT_VISIBILITY: independently read back the same deployment')\n        time.sleep(5)\nPY"
         }
       ]
     }
