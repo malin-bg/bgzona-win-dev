@@ -161,7 +161,9 @@ def main():
     parser.add_argument('--local-archive', type=Path, help='Isolated local verification ONLY; rejected in Actions')
     parser.add_argument('--accepted-cid', help='Exact reviewed DEV CID from input-trust.json')
     parser.add_argument('--c3-trust', type=Path, help='Verified ephemeral C3 DEV dispatch input')
+    parser.add_argument('--standard-trust', type=Path, help='Ephemeral independently accepted STANDARD CID')
     args = parser.parse_args()
+    require(not (args.standard_trust and args.c3_trust), 'CID_INPUT_AMBIGUOUS')
     site = checked_absolute(args.site)
     parent = checked_absolute(args.work.parent)
     work = parent / args.work.name
@@ -169,17 +171,24 @@ def main():
             not work.is_relative_to(site) and not site.is_relative_to(work) and
             not any((p / '.git').exists() for p in (parent, *parent.parents)), 'NEW_EXTERNAL_WORK_REQUIRED')
     accepted = None
-    require(args.c3_trust is None or args.accepted_cid is not None, 'C3_DEV_CID_REQUIRED')
+    require(not (args.c3_trust or args.standard_trust) or args.accepted_cid is not None, 'C3_DEV_CID_REQUIRED')
     if args.accepted_cid is not None:
         require(args.local_archive is None, 'CID_LOCAL_OVERRIDE_FORBIDDEN')
-        trust = args.c3_trust if args.c3_trust else site / 'tools/media/input-trust.json'
+        trust = args.standard_trust or args.c3_trust or site / 'tools/media/input-trust.json'
         require(trust.is_file() and not trust.is_symlink() and trust.stat().st_size <= 8192, 'CID_INPUT_FILE')
         wire = trust.read_bytes()
         config = json.loads(wire)
         require(data(config)==wire, 'CID_INPUT_CANONICAL')
+        if args.standard_trust:
+            known=json.loads((site/'tools/media/input-trust.json').read_bytes())
+            require(all(config[k]==known[k] for k in ('schema','control_id','assets_id','ledger_genesis')),
+                    'STANDARD_DEV_TRUST_ROOT')
         accepted, registry = resolve_input.resolve(config, args.accepted_cid, get)
         if args.c3_trust:
             verify_c3_edit(accepted, registry)
+        if args.standard_trust:
+            require(accepted['channel']=='dev' and registry['transaction_status']=='staged',
+                    'STANDARD_DEV_ACCEPTANCE')
         lock = validate_lock(accepted['input'])
         raw = obtain(lock, provider_repository=resolve_input.CONTROL)
     else:
