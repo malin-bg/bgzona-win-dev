@@ -7,7 +7,8 @@
       ],
       "paths-ignore": [
         ".github/workflows/hugo.yml",
-        "tools/media/delivery.py"
+        "tools/media/delivery.py",
+        "tools/media/resolve_input.py"
       ]
     },
     "workflow_dispatch": {
@@ -70,7 +71,10 @@
           "name": "Trusted input, build, current acceptance and seal",
           "shell": "bash",
           "run": "set -euo pipefail\ntrust=tools/media/input-trust.json\nextra=()\nif [[ \"$GITHUB_EVENT_NAME\" == workflow_dispatch && \"$GITHUB_ACTOR_ID\" == 353092585 ]]; then\n  trust=\"$RUNNER_TEMP/bgz-c3-input-trust.json\"\n  python -B - \"$trust\" <<'PY'\nimport hashlib,json,os,re,sys\nfrom pathlib import Path\nevent=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_bytes())\nassert event['sender']['id']==353092585 and event['repository']['id']==1149689018\nparams=event['inputs']\nassert set(params)=={'accepted_cid','input_trust'}\nraw=params['input_trust'].encode('utf-8')\nassert 0<len(raw)<=8192 and re.fullmatch('[0-9a-f]{64}',params['accepted_cid'])\nobj=json.loads(raw)\ndef data(x):\n    return json.dumps(x,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()\nassert data(obj)==raw and obj['cid']==params['accepted_cid']\nassert hashlib.sha256(data(obj['accepted'])).hexdigest()==obj['cid']\nPath(sys.argv[1]).write_bytes(raw)\nPY\n  extra=(--standard-trust \"$trust\")\nfi\n[[ -f \"$trust\" && ! -L \"$trust\" ]]\ncid=\"$(python -B -c 'import json,re,sys; v=json.load(open(sys.argv[1],encoding=\"utf8\"))[\"cid\"]; assert re.fullmatch(\"[0-9a-f]{64}\",v); print(v)' \"$trust\")\"\npython -B tools/media/delivery.py --work \"$RUNNER_TEMP/bgz-delivery\" --hugo \"$RUNNER_TEMP/bgz-hugo/hugo\" --accepted-cid \"$cid\" \"${extra[@]}\"\npython -B - \"$cid\" <<'PY'\nimport json,os,sys\nfrom html.parser import HTMLParser\nfrom pathlib import Path\nfrom urllib.parse import urlsplit\nroot=Path(os.environ['RUNNER_TEMP'])/'bgz-delivery'\nseal=json.loads((root/'site-seal.json').read_bytes())\nfiles={r['path']:r['sha256'] for r in seal['files']}\ncatalog=json.loads((root/'input/artifact/catalog.json').read_bytes())\npaths={'/media-version.json','/','/kolaji/','/poslaniya/'}\nclass Page(HTMLParser):\n    def __init__(self):super().__init__();self.og=None\n    def handle_starttag(self,t,a):\n        a=dict(a)\n        if t=='meta' and a.get('property')=='og:image':self.og=a.get('content')\nfor row in catalog['items']:\n    if row['state']!='published':continue\n    page=row['page_url'];assert page.startswith('/') and page.endswith('/')\n    doc=Page();doc.feed((root/'candidate/public'/page.lstrip('/')/'index.html').read_text(encoding='utf8'))\n    u=urlsplit(doc.og);assert u.scheme=='https' and u.netloc=='dev.bgzona.win' and not u.query and not u.fragment\n    paths.update((page,row['original'],u.path))\npairs=[]\nfor path in sorted(paths):\n    name=path.lstrip('/')+('index.html' if path.endswith('/') else '')\n    assert name in files and (root/'candidate/public'/name).stat().st_size<=16_000_000\n    pairs.append([path,files[name]])\nwire=json.dumps(pairs,separators=(',',':'),ensure_ascii=True)\nassert len(wire.encode())<=64000\nwith open(os.environ['GITHUB_OUTPUT'],'a',encoding='ascii') as f:\n    f.write('cid='+sys.argv[1]+'\\nchecks='+wire+'\\n')\nPY",
-          "id": "input"
+          "id": "input",
+          "env": {
+            "GH_TOKEN": "${{ github.token }}"
+          }
         },
         {
           "name": "Verify accepted output immediately before upload",
@@ -90,6 +94,9 @@
       "outputs": {
         "cid": "${{ steps.input.outputs.cid }}",
         "checks": "${{ steps.input.outputs.checks }}"
+      },
+      "permissions": {
+        "contents": "read"
       }
     },
     "deploy": {

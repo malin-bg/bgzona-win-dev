@@ -45,12 +45,43 @@ def validate_lock(lock):
 
 
 def get(url, limit):
-    request = urllib.request.Request(url, headers={'User-Agent': 'bgzona-dev-input/1',
-                        'Accept': 'application/vnd.github+json' if url.startswith('https://api.github.com/')
-                        else 'application/octet-stream'})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        raw = response.read(limit + 1)
-    require(len(raw) <= limit, 'PROVIDER_SIZE_LIMIT')
+    """Bounded public reads; the existing PROD token never leaves fixed API origins."""
+    from urllib.error import HTTPError
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self,*args,**kwargs):return None
+    u=urllib.parse.urlsplit(url)
+    require(u.scheme=='https' and not u.username and not u.password and u.port in (None,443), 'DEV_READ_ORIGIN')
+    api=(u.hostname=='api.github.com' and any(u.path.startswith('/repos/'+r+'/') or u.path=='/repos/'+r
+         for r in (resolve_input.CONTROL,resolve_input.ASSETS,REPOSITORY)))
+    browser=(u.hostname=='github.com' and u.path.startswith('/'+resolve_input.CONTROL+'/releases/download/'))
+    version=False
+    ledger_archive=(u.hostname=='codeload.github.com' and not u.query and not u.fragment and
+                    re.fullmatch('/'+resolve_input.CONTROL+'/zip/[0-9a-f]{40}',u.path) is not None)
+    require(api or browser or version or ledger_archive,'DEV_READ_SCOPE')
+    headers={'User-Agent':'bgzona-dev-input/1','Accept':'application/vnd.github+json' if api else 'application/octet-stream'}
+    token=os.environ.get('GH_TOKEN')
+    if api and os.environ.get('GITHUB_ACTIONS')=='true':
+        require(bool(token),'DEV_READ_AUTH_REQUIRED')
+        require(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('GITHUB_REPOSITORY')==REPOSITORY and
+                os.environ.get('GITHUB_REPOSITORY_ID')=='1149689018' and os.environ.get('GITHUB_REF')=='refs/heads/main' and
+                os.environ.get('GITHUB_WORKFLOW_REF')==REPOSITORY+'/.github/workflows/hugo.yml@refs/heads/main' and
+                os.environ.get('GITHUB_ACTOR_ID') in ('252877943','353092585') and os.environ.get('GITHUB_RUN_ATTEMPT')=='1' and
+                re.fullmatch('[0-9a-f]{40}',os.environ.get('GITHUB_WORKFLOW_SHA','')), 'DEV_READ_CONTEXT')
+        headers['Authorization']='Bearer '+token
+    opener=urllib.request.build_opener(NoRedirect)
+    try:
+        response=opener.open(urllib.request.Request(url,headers=headers),timeout=30)
+    except HTTPError as exc:
+        target=exc.headers.get('Location','');v=urllib.parse.urlsplit(target)
+        require(browser and exc.code in (301,302,303,307,308) and v.scheme=='https' and
+                v.netloc in ('release-assets.githubusercontent.com','objects.githubusercontent.com'), 'DEV_READ_HTTP_OR_REDIRECT')
+        # Never forward API credentials or print a signed target.
+        try:response=opener.open(urllib.request.Request(target),timeout=30)
+        except Exception:raise RuntimeError('DEV_ASSET_READ_FAILED') from None
+    except Exception:raise RuntimeError('DEV_API_READ_FAILED') from None
+    with response:
+        require(response.status==200,'DEV_READ_STATUS');raw=response.read(limit+1)
+    require(len(raw)<=limit,'PROVIDER_SIZE_LIMIT')
     return raw
 
 
