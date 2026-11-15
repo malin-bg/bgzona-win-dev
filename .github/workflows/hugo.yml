@@ -8,7 +8,8 @@
       "paths-ignore": [
         ".github/workflows/hugo.yml",
         "tools/media/delivery.py",
-        "tools/media/resolve_input.py"
+        "tools/media/resolve_input.py",
+        "tools/media_snapshot/**"
       ]
     },
     "workflow_dispatch": {
@@ -38,7 +39,7 @@
   },
   "jobs": {
     "build": {
-      "if": "github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.repository_id == '1149689018' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && ((github.actor_id == '353092585' && github.run_attempt == 1 && inputs.accepted_cid != '' && inputs.input_trust != '') || (github.actor_id == '252877943' && inputs.accepted_cid == '' && inputs.input_trust == ''))))",
+      "if": "(github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.repository_id == '1149689018' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && ((github.actor_id == '353092585' && github.run_attempt == 1 && inputs.accepted_cid != '' && inputs.input_trust != '') || (github.actor_id == '252877943' && inputs.accepted_cid == '' && inputs.input_trust == ''))))) && inputs.input_trust != 'rs4n-build-only'",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 15,
       "steps": [
@@ -129,6 +130,74 @@
             "CHECKS": "${{ needs.build.outputs.checks }}"
           },
           "run": "set -euo pipefail\npython -B - <<'PY'\nimport hashlib,json,os,re,time\nfrom concurrent.futures import ThreadPoolExecutor\nfrom urllib.request import Request,build_opener,HTTPRedirectHandler\nclass NoRedirect(HTTPRedirectHandler):\n    def redirect_request(self,*a,**kw):return None\ncid=os.environ['CID'];assert re.fullmatch('[0-9a-f]{64}',cid)\npairs=json.loads(os.environ['CHECKS']);assert pairs and len(pairs)==len({p for p,h in pairs})\nfor p,h in pairs:\n    assert p.startswith('/') and not p.startswith('//') and '..' not in p.split('/') and '\\\\' not in p\n    assert re.fullmatch('[0-9a-f]{64}',h)\ndef check(pair):\n    path,want=pair;url='https://dev.bgzona.win'+path\n    with build_opener(NoRedirect).open(Request(url+'?cid='+cid,headers={'Cache-Control':'no-cache'}),timeout=10) as r:\n        assert r.status==200 and r.geturl().split('?')[0]==url\n        raw=r.read(16_000_001)\n    assert len(raw)<=16_000_000 and hashlib.sha256(raw).hexdigest()==want\n    if path=='/media-version.json':assert json.loads(raw)['cid']==cid and json.loads(raw)['channel']=='dev'\ndeadline=time.monotonic()+90\nwhile True:\n    try:\n        with ThreadPoolExecutor(max_workers=4) as pool:list(pool.map(check,pairs))\n        print('PUBLIC_DEV_VERIFIED',cid,len(pairs));break\n    except Exception:\n        if time.monotonic()>=deadline:raise SystemExit('WAIT_VISIBILITY: independently read back the same deployment')\n        time.sleep(5)\nPY"
+        }
+      ]
+    },
+    "snapshot-build-only": {
+      "name": "Read-only PUBLIC snapshot DEV acceptance",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && inputs.input_trust == 'rs4n-build-only'",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 15,
+      "permissions": {
+        "contents": "read"
+      },
+      "steps": [
+        {
+          "name": "Checkout current source",
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "with": {
+            "submodules": "recursive",
+            "persist-credentials": false,
+            "fetch-depth": 1,
+            "ref": "${{ github.sha }}"
+          }
+        },
+        {
+          "name": "Checkout fixed PUBLIC data ref",
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "with": {
+            "repository": "malin-bg/bgzona-github-lab",
+            "ref": "rs4m-synthetic-data",
+            "path": ".rs4n-public-data",
+            "fetch-depth": 0,
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Pinned isolated Pillow runtime",
+          "shell": "bash",
+          "run": "set -euo pipefail\nwheel=\"$RUNNER_TEMP/h1-pillow.whl\"\ncurl --disable --silent --fail --proto '=https' --max-time 30 'https://files.pythonhosted.org/packages/e6/99/fdf65cc539e266ab93546c261bdf98411fe165c6e4e13f9dbf597097192b/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl' -o \"$wheel\"\nprintf '%s  %s\\n' '42d63be3af4f9b951b199b0a9d23365d37ab14687e6d77b74940432c8515c4ca' \"$wheel\" | sha256sum --check --status\nmv \"$wheel\" \"$RUNNER_TEMP/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl\"\n/usr/bin/python3 -I -B -c 'import platform,sys; assert sys.version_info[:2]==(3,12) and platform.machine()==\"x86_64\"'\n/usr/bin/python3 -I -B -m pip --isolated install --quiet --no-index --no-deps --no-cache-dir --no-compile --target \"$RUNNER_TEMP/h1-pillow\" \"$RUNNER_TEMP/pillow-13.0.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl\"\n"
+        },
+        {
+          "name": "Verified Hugo extended 0.155.2",
+          "shell": "bash",
+          "run": "set -euo pipefail\nmkdir \"$RUNNER_TEMP/bgz-hugo\"\ncurl --fail --location --silent --show-error --output \"$RUNNER_TEMP/hugo.tar.gz\" https://github.com/gohugoio/hugo/releases/download/v0.155.2/hugo_extended_0.155.2_linux-amd64.tar.gz\nprintf '%s  %s\\n' '2bf76c75610e75fa5d15fd3dd0e1377c16ce4fa7202713283c744a19323ff419' \"$RUNNER_TEMP/hugo.tar.gz\" | sha256sum --check --strict\ntar -xzf \"$RUNNER_TEMP/hugo.tar.gz\" -C \"$RUNNER_TEMP/bgz-hugo\" hugo\n\"$RUNNER_TEMP/bgz-hugo/hugo\" version"
+        },
+        {
+          "name": "Bind read-only snapshot input",
+          "env": {
+            "H1_WORKFLOW_SHA": "${{ github.workflow_sha }}"
+          },
+          "shell": "bash",
+          "run": "/usr/bin/python3 -I -B tools/media_snapshot/build_only_guard.py"
+        },
+        {
+          "name": "Native snapshot DEV build acceptance seal; no deployment",
+          "shell": "bash",
+          "run": "set -euo pipefail\n/usr/bin/python3 -B tools/media_snapshot/snapshot_delivery.py --site \"$GITHUB_WORKSPACE\" --request \"$RUNNER_TEMP/rs4n-request.json\" --work \"$RUNNER_TEMP/rs4n-dev\" --hugo \"$RUNNER_TEMP/bgz-hugo/hugo\"\n",
+          "env": {
+            "PYTHONPATH": "${{ runner.temp }}/h1-pillow"
+          }
+        },
+        {
+          "name": "Preserve build-only receipts",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "with": {
+            "name": "rs4n-dev-build-only-receipts",
+            "path": "${{ runner.temp }}/rs4n-dev/receipt.json\n${{ runner.temp }}/rs4n-dev/acceptance.json\n${{ runner.temp }}/rs4n-dev/site-seal.json\n${{ runner.temp }}/rs4n-dev/site-tree.sha256",
+            "if-no-files-found": "error",
+            "retention-days": 1
+          }
         }
       ]
     }

@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "channel": "dev",
+  "endpoint": "../../../.rs4n-public-data/.git",
+  "workspace": "../../..",
+  "output_workspace": "../../../.rs4n-unbound-output",
+  "ref": "refs/heads/rs4m-synthetic-data",
+  "root": "564c405279c89e990c9345ccf7c54e2bf38c4470"
+}
