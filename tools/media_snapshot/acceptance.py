@@ -175,6 +175,66 @@ def current_only_public(out,manifest,states):
          'archived_pages':bad_pages,'stale_references':sorted(stale)}
  return not any(detail.values()),detail
 
+class MediaDescription(HTMLParser):
+    """Read the single plain-text description of the expected media article."""
+
+    def __init__(self, media_id):
+        super().__init__(convert_charrefs=True)
+        self.media_id = media_id
+        self.article_depth = 0
+        self.articles = 0
+        self.descriptions = 0
+        self.in_description = False
+        self.valid = True
+        self.parts = []
+
+    def handle_starttag(self, tag, attrs):
+        if self.in_description:
+            self.valid = False
+        if tag == 'article':
+            if self.article_depth:
+                self.article_depth += 1
+            elif ('data-media-id', self.media_id) in attrs:
+                self.articles += 1
+                self.article_depth = 1
+        if self.article_depth and any(
+            key == 'class' and 'media-description' in (value or '').split()
+            for key, value in attrs
+        ):
+            self.descriptions += 1
+            self.valid &= tag == 'div' and attrs == [('class', 'media-description')]
+            self.in_description = True
+
+    def handle_endtag(self, tag):
+        if self.in_description:
+            self.valid &= tag == 'div'
+            self.in_description = False
+        if tag == 'article' and self.article_depth:
+            self.article_depth -= 1
+
+    def handle_data(self, text):
+        if self.in_description:
+            self.parts.append(text)
+
+    def handle_comment(self, text):
+        if self.in_description:
+            self.valid = False
+
+    handle_decl = handle_pi = unknown_decl = handle_comment
+
+
+def description_matches(page, media_id, expected):
+    # Normalize only line endings. HTMLParser decodes character references once.
+    parser = MediaDescription(media_id)
+    parser.feed(page.replace('\r\n', '\n').replace('\r', '\n'))
+    parser.close()
+    return (
+        parser.valid and not parser.article_depth and not parser.in_description
+        and parser.articles == parser.descriptions == 1
+        and ''.join(parser.parts) == expected.replace('\r\n', '\n').replace('\r', '\n')
+    )
+
+
 def validate(buildroot,baseline_output,report):
  manifest=json.loads((buildroot/'validated-manifest.json').read_bytes())
  states=json.loads((buildroot/'build-receipt.json').read_bytes())['states']
@@ -213,7 +273,7 @@ def validate(buildroot,baseline_output,report):
   elif r['ext'] in ('.gif','.webp'):ck('static-fallback:'+key,ogprops['format']=='JPEG' and ogprops['frames']==1)
   else:ck('original-OG:'+key,fhash(ogp)==r['sha256'])
   desc=(buildroot/'media'/r['txt']).read_text(encoding='utf8').strip() or (('Колаж' if r['collection']=='kolaji' else 'Послание')+f' {r["number"]:05d}')
-  ck('TXT-render:'+key,html.escape(desc,quote=False).replace('\r\n','\n') in text.replace('\r\n','\n'))
+  ck('TXT-render:'+key,description_matches(text,key,desc))
   ck('social-description:'+key,all(d.select('meta',**{attr:tag})[0]['content']==desc for attr,tag in [('property','og:description'),('name','twitter:description')]))
   ck('share-copy-page-url:'+key,parse_qs(urlsplit(d.select('a',id='facebook-share')[0]['href']).query).get('u')==[expected] and d.select('button',id='copy-link')[0]['data-url']==expected)
   ck('sitemap:'+key,locs.count(expected)==1)
