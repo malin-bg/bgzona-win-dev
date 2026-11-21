@@ -7,7 +7,9 @@ ROOT='564c405279c89e990c9345ccf7c54e2bf38c4470'
 MARKER='rs4n-build-only'
 REAL12_COMMIT='05cfdeb41ca116dc07614906fbbdee9b3a597745'
 REAL12_SID='317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f'
-REFS={'CURRENT':'refs/heads/rs4m-synthetic-data','PUBLIC12':'refs/heads/publisher-data'}
+REAL13_COMMIT='332a1cd0ffd95f86547aa64174b3af53c44977e2'
+REAL13_SID='f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'
+REFS={'CURRENT':'refs/heads/rs4m-synthetic-data','PUBLIC12':'refs/heads/publisher-data','PENDING13':'refs/heads/publisher-data'}
 def need(v,c):
  if not v:raise ValueError(c)
 def admit(event,env):
@@ -16,9 +18,10 @@ def admit(event,env):
  need(env.get('H1_WORKFLOW_SHA')==env.get('GITHUB_SHA') and re.fullmatch('[a-f0-9]{40}',env.get('GITHUB_SHA','')),'DEV_CODE')
  need(event.get('repository',{}).get('id')==1149689018 and event.get('sender',{}).get('id')==252877943,'DEV_EVENT_BINDING')
  values=event.get('inputs',{})
- need(set(values)=={'accepted_cid','input_trust'} and values['input_trust'] in (MARKER,'rs4n-real12-pages'),'DEV_BUILD_ONLY_INPUTS')
- if values['input_trust']=='rs4n-real12-pages':
-  need(values['accepted_cid']==REAL12_SID,'DEV_REAL12_PAGES_INPUT')
+ need(set(values)=={'accepted_cid','input_trust'} and values['input_trust'] in (MARKER,'rs4n-real13-pages'),'DEV_BUILD_ONLY_INPUTS')
+ if values['input_trust']=='rs4n-real13-pages':
+  need(values['accepted_cid']==REAL13_SID,'DEV_REAL13_PAGES_INPUT')
+  return {'data_commit':REAL13_COMMIT,'selection':'PENDING13','snapshot':REAL13_SID}
  if values['accepted_cid']==SID:
   return {'data_commit':COMMIT,'selection':'CURRENT','snapshot':SID}
  need(values['accepted_cid']==REAL12_SID,'DEV_BUILD_ONLY_INPUTS')

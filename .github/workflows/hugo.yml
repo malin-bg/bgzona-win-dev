@@ -135,7 +135,7 @@
     },
     "snapshot-build-only": {
       "name": "Read-only PUBLIC snapshot DEV acceptance",
-      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && (inputs.input_trust == 'rs4n-build-only' || (inputs.input_trust == 'rs4n-real12-pages' && inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f'))",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && (inputs.input_trust == 'rs4n-build-only' || (inputs.input_trust == 'rs4n-real13-pages' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'))",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 15,
       "permissions": {
@@ -157,7 +157,7 @@
           "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
           "with": {
             "repository": "malin-bg/bgzona-github-lab",
-            "ref": "${{ inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' && 'publisher-data' || 'rs4m-synthetic-data' }}",
+            "ref": "${{ (inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' || inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81') && 'publisher-data' || 'rs4m-synthetic-data' }}",
             "path": ".rs4n-public-data",
             "fetch-depth": 0,
             "persist-credentials": false
@@ -200,31 +200,31 @@
           }
         },
         {
-          "name": "Verify exact REAL12 seal before upload",
-          "if": "inputs.input_trust == 'rs4n-real12-pages' && inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f'",
+          "name": "Verify exact REAL13 seal before upload",
+          "if": "inputs.input_trust == 'rs4n-real13-pages' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'",
           "shell": "bash",
-          "run": "set -euo pipefail\npython -B tools/media_snapshot/artifact_seal.py verify --root \"$RUNNER_TEMP/rs4n-dev/candidate/public\" --manifest \"$RUNNER_TEMP/rs4n-dev/site-seal.json\" --expected-digest '5cddc7cb4add89e0da66653fd3ee1b7e597940e848386d78526e50213de37c08'\n"
+          "run": "set -euo pipefail\npython -B tools/media_snapshot/artifact_seal.py verify --root \"$RUNNER_TEMP/rs4n-dev/candidate/public\" --manifest \"$RUNNER_TEMP/rs4n-dev/site-seal.json\" --expected-digest '1f9030617a351123d577f0db8009f5b6dadd79aac625839d7c96ea5e1a0934ba'\n"
         },
         {
-          "name": "Upload only the sealed REAL12 site",
-          "id": "real12_pages",
-          "if": "inputs.input_trust == 'rs4n-real12-pages' && inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f'",
+          "name": "Upload only the sealed REAL13 site",
+          "id": "real13_pages",
+          "if": "inputs.input_trust == 'rs4n-real13-pages' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'",
           "uses": "actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa",
           "with": {
-            "name": "real12-pages",
+            "name": "real13-pages",
             "path": "${{ runner.temp }}/rs4n-dev/candidate/public",
             "retention-days": 1
           }
         }
       ],
       "outputs": {
-        "pages_artifact_id": "${{ steps.real12_pages.outputs.artifact_id }}"
+        "pages_artifact_id": "${{ steps.real13_pages.outputs.artifact_id }}"
       }
     },
-    "real12-pages": {
-      "name": "Deploy sealed REAL12 to DEV Pages",
+    "real13-pages": {
+      "name": "Deploy sealed REAL13 to DEV Pages",
       "needs": "snapshot-build-only",
-      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && inputs.input_trust == 'rs4n-real12-pages' && inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.pages_artifact_id != ''",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && inputs.input_trust == 'rs4n-real13-pages' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81' && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.pages_artifact_id != ''",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 10,
       "permissions": {
@@ -241,7 +241,7 @@
           "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
           "with": {
             "artifact-ids": "${{ needs.snapshot-build-only.outputs.pages_artifact_id }}",
-            "path": "${{ runner.temp }}/real12-download",
+            "path": "${{ runner.temp }}/real13-download",
             "merge-multiple": true
           }
         },
@@ -251,14 +251,14 @@
           "env": {
             "PAGES_ARTIFACT_ID": "${{ needs.snapshot-build-only.outputs.pages_artifact_id }}"
           },
-          "run": "set -euo pipefail\npython -B - <<'PY'\nimport hashlib,json,os,re,subprocess,sys,tarfile\nfrom pathlib import Path\nroot='05cfdeb41ca116dc07614906fbbdee9b3a597745'\nsid='317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f'\nseal='5cddc7cb4add89e0da66653fd3ee1b7e597940e848386d78526e50213de37c08'\ndef need(ok, code):\n    if not ok:\n        raise ValueError(code)\ndef verify(path, expected_root, expected_sid, expected_seal):\n    rows, seen, version = [], set(), None\n    with tarfile.open(path, 'r:') as archive:\n        for member in archive:\n            name = member.name.removeprefix('./')\n            if member.isdir() and name in ('', '.'):\n                continue\n            need(not any(x in name for x in (chr(92), ':', chr(0))) and all(x not in ('', '.', '..', '.git', '.github') for x in name.split('/')), 'PAGES_PATH')\n            need(name.casefold() not in seen, 'PAGES_DUPLICATE')\n            seen.add(name.casefold())\n            if member.isdir():\n                continue\n            need(member.isreg() and not member.issparse(), 'PAGES_SPECIAL_FILE')\n            with archive.extractfile(member) as stream:\n                if name == 'media-version.json':\n                    need(member.size <= 1024, 'PAGES_VERSION_SIZE')\n                    raw = stream.read()\n                    version = json.loads(raw)\n                    digest = hashlib.sha256(raw).hexdigest()\n                else:\n                    digest = hashlib.file_digest(stream, 'sha256').hexdigest()\n            rows.append({'path':name,'bytes':member.size,'sha256':digest})\n    need(version == {'schema':1,'channel':'dev','data_revision':expected_root,'snapshot':expected_sid}, 'PAGES_VERSION')\n    data = json.dumps({'version':1,'algorithm':'sha256','files':sorted(rows,key=lambda x:x['path'])},ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()\n    need(len(rows) == 428 and hashlib.sha256(data).hexdigest() == expected_seal, 'PAGES_SEAL')\ndef live_head(url, ref, expected):\n    q=subprocess.run(['git','-c','credential.helper=','ls-remote','--exit-code','--refs',url,ref],capture_output=True,text=True,timeout=30,env={**os.environ,'GIT_TERMINAL_PROMPT':'0','GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':os.devnull})\n    need(q.returncode==0 and q.stdout.split()==[expected,ref], 'PAGES_REF_MOVED')\nif __name__=='__main__':\n    artifact=os.environ['PAGES_ARTIFACT_ID']\n    need(re.fullmatch('[1-9][0-9]+',artifact), 'PAGES_ARTIFACT_ID')\n    verify(Path(os.environ['RUNNER_TEMP'])/'real12-download/artifact.tar',root,sid,seal)\n    live_head('https://github.com/malin-bg/bgzona-win-dev.git','refs/heads/main',os.environ['GITHUB_SHA'])\n    live_head('https://github.com/malin-bg/bgzona-github-lab.git','refs/heads/publisher-data',root)\n    print('REAL12_PAGES_ARTIFACT_VERIFIED id='+artifact+' seal='+seal)\nPY\n"
+          "run": "set -euo pipefail\npython -B - <<'PY'\nimport hashlib,json,os,re,subprocess,sys,tarfile\nfrom pathlib import Path\nroot='332a1cd0ffd95f86547aa64174b3af53c44977e2'\nsid='f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'\nseal='1f9030617a351123d577f0db8009f5b6dadd79aac625839d7c96ea5e1a0934ba'\ndef need(ok, code):\n    if not ok:\n        raise ValueError(code)\ndef verify(path, expected_root, expected_sid, expected_seal):\n    rows, seen, version = [], set(), None\n    with tarfile.open(path, 'r:') as archive:\n        for member in archive:\n            name = member.name.removeprefix('./')\n            if member.isdir() and name in ('', '.'):\n                continue\n            need(not any(x in name for x in (chr(92), ':', chr(0))) and all(x not in ('', '.', '..', '.git', '.github') for x in name.split('/')), 'PAGES_PATH')\n            need(name.casefold() not in seen, 'PAGES_DUPLICATE')\n            seen.add(name.casefold())\n            if member.isdir():\n                continue\n            need(member.isreg() and not member.issparse(), 'PAGES_SPECIAL_FILE')\n            with archive.extractfile(member) as stream:\n                if name == 'media-version.json':\n                    need(member.size <= 1024, 'PAGES_VERSION_SIZE')\n                    raw = stream.read()\n                    version = json.loads(raw)\n                    digest = hashlib.sha256(raw).hexdigest()\n                else:\n                    digest = hashlib.file_digest(stream, 'sha256').hexdigest()\n            rows.append({'path':name,'bytes':member.size,'sha256':digest})\n    need(version == {'schema':1,'channel':'dev','data_revision':expected_root,'snapshot':expected_sid}, 'PAGES_VERSION')\n    data = json.dumps({'version':1,'algorithm':'sha256','files':sorted(rows,key=lambda x:x['path'])},ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()\n    need(len(rows) == 428 and hashlib.sha256(data).hexdigest() == expected_seal, 'PAGES_SEAL')\ndef live_head(url, ref, expected):\n    q=subprocess.run(['git','-c','credential.helper=','ls-remote','--exit-code','--refs',url,ref],capture_output=True,text=True,timeout=30,env={**os.environ,'GIT_TERMINAL_PROMPT':'0','GIT_CONFIG_NOSYSTEM':'1','GIT_CONFIG_GLOBAL':os.devnull})\n    need(q.returncode==0 and q.stdout.split()==[expected,ref], 'PAGES_REF_MOVED')\nif __name__=='__main__':\n    artifact=os.environ['PAGES_ARTIFACT_ID']\n    need(re.fullmatch('[1-9][0-9]+',artifact), 'PAGES_ARTIFACT_ID')\n    verify(Path(os.environ['RUNNER_TEMP'])/'real13-download/artifact.tar',root,sid,seal)\n    live_head('https://github.com/malin-bg/bgzona-win-dev.git','refs/heads/main',os.environ['GITHUB_SHA'])\n    live_head('https://github.com/malin-bg/bgzona-github-lab.git','refs/heads/publisher-data',root)\n    print('REAL13_PAGES_ARTIFACT_VERIFIED id='+artifact+' seal='+seal)\nPY\n"
         },
         {
-          "name": "Deploy the verified REAL12 Pages artifact",
+          "name": "Deploy the verified REAL13 Pages artifact",
           "id": "deployment",
           "uses": "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e",
           "with": {
-            "artifact_name": "real12-pages"
+            "artifact_name": "real13-pages"
           }
         }
       ]

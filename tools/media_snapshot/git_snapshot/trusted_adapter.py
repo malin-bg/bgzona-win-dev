@@ -37,11 +37,11 @@ def read(binding):
  state=strict(git('show',pin+':state.json'))
  need(set(state)=={'schema','baseline_complete','snapshot','public_snapshot','pending_accepted'} and type(state['schema']) is int and state['schema']==1 and state['baseline_complete'] is True,'PUBLIC_STATE_FIELDS')
  if T.ANCHOR==T.REAL12_ROOT:
-  selections={'PUBLIC12':'317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f','PENDING13':None}
+  selections={'PUBLIC12':'317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f','PENDING13':'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'}
   pending=state['pending_accepted']
   need(state['public_snapshot']==selections['PUBLIC12'],'PUBLIC_BASELINE_IDENTITY')
   if pending is None:
-   need(selections['PENDING13'] is None and state['snapshot']==state['public_snapshot'],'PUBLIC_BASELINE_SELECTION')
+   need(state['snapshot']==state['public_snapshot'],'PUBLIC_BASELINE_SELECTION')
    need(name!='PENDING13','PENDING13_NOT_PUBLIC')
    state_sids=[state['snapshot'],state['public_snapshot']]
   else:
