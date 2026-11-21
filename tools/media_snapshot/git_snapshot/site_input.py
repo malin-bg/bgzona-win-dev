@@ -15,7 +15,7 @@ def strict(raw):
 def configured():
  policy=strict((ROOT/'site-input-policy.json').read_bytes())
  P.need(set(policy)=={'schema','channel','endpoint','workspace','output_workspace','ref','root'} and type(policy['schema']) is int and policy['schema']==1 and policy['channel'] in ('dev','prod'),'SITE_POLICY_FIELDS')
- P.need(policy['ref']==G.REF and policy['root']==T.ANCHOR,'SITE_TRUST_POLICY')
+ T.select_profile(policy['ref'],policy['root'])
  for key in ['endpoint','workspace','output_workspace']:
   value=policy[key];P.need(isinstance(value,str) and value and '://' not in value and ':' not in value and '\\' not in value and not value.startswith('/'),'LOCAL_POLICY_PATH')
   path=ROOT/value;P.need(not any(p.is_symlink() or p.is_junction() for p in [path,*path.parents]),'POLICY_LINK');policy[key]=path.resolve()

@@ -4,6 +4,15 @@ from tempfile import TemporaryDirectory
 import importlib.util,json,sys
 import git_publisher as G
 P=G.P;ROOT=None;REMOTE=None;CACHE=None;REF=G.REF='refs/heads/rs4m-synthetic-data';ANCHOR='564c405279c89e990c9345ccf7c54e2bf38c4470';ZERO=G.ZERO
+SYNTHETIC_ROOT=ANCHOR
+REAL12_ROOT='05cfdeb41ca116dc07614906fbbdee9b3a597745'
+PROFILES={SYNTHETIC_ROOT:'refs/heads/rs4m-synthetic-data',REAL12_ROOT:'refs/heads/publisher-data'}
+
+def select_profile(ref,anchor):
+ global REF,ANCHOR
+ P.need(anchor in PROFILES and ref==PROFILES[anchor],'SITE_TRUST_POLICY')
+ REF=G.REF=ref
+ ANCHOR=anchor
 
 def configure(workspace,remote,cache):
  global ROOT,REMOTE,CACHE

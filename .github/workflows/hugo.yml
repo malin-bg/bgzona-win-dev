@@ -157,7 +157,7 @@
           "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
           "with": {
             "repository": "malin-bg/bgzona-github-lab",
-            "ref": "rs4m-synthetic-data",
+            "ref": "${{ inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' && 'publisher-data' || 'rs4m-synthetic-data' }}",
             "path": ".rs4n-public-data",
             "fetch-depth": 0,
             "persist-credentials": false

@@ -36,13 +36,30 @@ def read(binding):
  REPO,pin,observed_head=T.trusted_pin(binding['data_commit']);name=binding['selection'];need(name in (*SELECTIONS,'CURRENT'),'SNAPSHOT_SELECTION')
  state=strict(git('show',pin+':state.json'))
  need(set(state)=={'schema','baseline_complete','snapshot','public_snapshot','pending_accepted'} and type(state['schema']) is int and state['schema']==1 and state['baseline_complete'] is True,'PUBLIC_STATE_FIELDS')
- need(set(state['pending_accepted'])=={'already_accepted','snapshot'} and state['pending_accepted']['already_accepted'] is True,'PUBLIC_PENDING_FIELDS')
- for value in [state['snapshot'],state['public_snapshot'],state['pending_accepted']['snapshot']]:need(isinstance(value,str) and re.fullmatch('[a-f0-9]{64}',value) is not None,'PUBLIC_STATE_SID')
- sid=state['snapshot'] if name=='CURRENT' else state['public_snapshot'] if name=='PUBLIC12' else state['pending_accepted']['snapshot']
- if 'snapshot' in binding:need(binding['snapshot']==sid,'SNAPSHOT_NOT_AUTHORIZED_BY_TRUSTED_STATE')
- binding=dict(binding,snapshot=sid)  # Derive only after trusted_pin; payload SID is never authority.
- need(state.get('baseline_complete') is True,'BASELINE_INCOMPLETE')
- need(state['public_snapshot']==SELECTIONS['PUBLIC12'] and state['pending_accepted']['snapshot']==SELECTIONS['PENDING13'] and state['pending_accepted']['already_accepted'] is True,'PUBLIC_PENDING_CONTRADICTION')
+ if T.ANCHOR==T.REAL12_ROOT:
+  selections={'PUBLIC12':'317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f','PENDING13':None}
+  pending=state['pending_accepted']
+  need(state['public_snapshot']==selections['PUBLIC12'],'PUBLIC_BASELINE_IDENTITY')
+  if pending is None:
+   need(selections['PENDING13'] is None and state['snapshot']==state['public_snapshot'],'PUBLIC_BASELINE_SELECTION')
+   need(name!='PENDING13','PENDING13_NOT_PUBLIC')
+   state_sids=[state['snapshot'],state['public_snapshot']]
+  else:
+   need(set(pending)=={'already_accepted','snapshot'} and pending['already_accepted'] is True and pending['snapshot']==selections['PENDING13'],'PUBLIC_PENDING_CONTRADICTION')
+   state_sids=[state['snapshot'],state['public_snapshot'],pending['snapshot']]
+  for value in state_sids:
+   need(isinstance(value,str) and re.fullmatch('[a-f0-9]{64}',value) is not None,'PUBLIC_STATE_SID')
+  sid=state['snapshot'] if name=='CURRENT' else state['public_snapshot'] if name=='PUBLIC12' else pending['snapshot']
+  if 'snapshot' in binding:need(binding['snapshot']==sid,'SNAPSHOT_NOT_AUTHORIZED_BY_TRUSTED_STATE')
+  binding=dict(binding,snapshot=sid)
+ else:
+  need(set(state['pending_accepted'])=={'already_accepted','snapshot'} and state['pending_accepted']['already_accepted'] is True,'PUBLIC_PENDING_FIELDS')
+  for value in [state['snapshot'],state['public_snapshot'],state['pending_accepted']['snapshot']]:need(isinstance(value,str) and re.fullmatch('[a-f0-9]{64}',value) is not None,'PUBLIC_STATE_SID')
+  sid=state['snapshot'] if name=='CURRENT' else state['public_snapshot'] if name=='PUBLIC12' else state['pending_accepted']['snapshot']
+  if 'snapshot' in binding:need(binding['snapshot']==sid,'SNAPSHOT_NOT_AUTHORIZED_BY_TRUSTED_STATE')
+  binding=dict(binding,snapshot=sid)  # Derive only after trusted_pin; payload SID is never authority.
+  need(state.get('baseline_complete') is True,'BASELINE_INCOMPLETE')
+  need(state['public_snapshot']==SELECTIONS['PUBLIC12'] and state['pending_accepted']['snapshot']==SELECTIONS['PENDING13'] and state['pending_accepted']['already_accepted'] is True,'PUBLIC_PENDING_CONTRADICTION')
  prefix='snapshots/'+sid+'/';entries=[]
  for row in git('ls-tree','-r','-z',pin,'--',prefix).split(b'\0'):
   if not row:continue

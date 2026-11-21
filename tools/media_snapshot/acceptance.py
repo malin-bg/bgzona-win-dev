@@ -230,7 +230,7 @@ def description_matches(page, media_id, expected):
     parser.close()
     return (
         parser.valid and not parser.article_depth and not parser.in_description
-        and parser.articles == parser.descriptions == 1
+        and parser.articles == 1 and parser.descriptions == (1 if expected else 0)
         and ''.join(parser.parts) == expected.replace('\r\n', '\n').replace('\r', '\n')
     )
 
@@ -272,8 +272,9 @@ def validate(buildroot,baseline_output,report):
   if r.get('og'):ck('own-OG-exact-path-bytes:'+key,urlsplit(ogurl).path=='/'+r['ogPublicPath'] and fhash(ogp)==fhash(buildroot/'media'/r['og']))
   elif r['ext'] in ('.gif','.webp'):ck('static-fallback:'+key,ogprops['format']=='JPEG' and ogprops['frames']==1)
   else:ck('original-OG:'+key,fhash(ogp)==r['sha256'])
-  desc=(buildroot/'media'/r['txt']).read_text(encoding='utf8').strip() or (('Колаж' if r['collection']=='kolaji' else 'Послание')+f' {r["number"]:05d}')
-  ck('TXT-render:'+key,description_matches(text,key,desc))
+  txt=(buildroot/'media'/r['txt']).read_text(encoding='utf8').strip()
+  desc=txt or (('Колаж' if r['collection']=='kolaji' else 'Послание')+f' {r["number"]:05d}')
+  ck('TXT-render:'+key,description_matches(text,key,txt))
   ck('social-description:'+key,all(d.select('meta',**{attr:tag})[0]['content']==desc for attr,tag in [('property','og:description'),('name','twitter:description')]))
   ck('share-copy-page-url:'+key,parse_qs(urlsplit(d.select('a',id='facebook-share')[0]['href']).query).get('u')==[expected] and d.select('button',id='copy-link')[0]['data-url']==expected)
   ck('sitemap:'+key,locs.count(expected)==1)
