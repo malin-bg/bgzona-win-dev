@@ -27,17 +27,29 @@ def admit(event,env):
  need(values['accepted_cid']==REAL12_SID,'DEV_BUILD_ONLY_INPUTS')
  return {'data_commit':REAL12_COMMIT,'selection':'PUBLIC12','snapshot':REAL12_SID}
 def main():
- site=Path(os.environ['GITHUB_WORKSPACE']).resolve();temp=Path(os.environ['RUNNER_TEMP']).resolve();event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_bytes());request=admit(event,os.environ)
+ site=Path(os.environ['GITHUB_WORKSPACE']).resolve();temp=Path(os.environ['RUNNER_TEMP']).resolve();event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_bytes());values=event.get("inputs",{});automatic=str(values.get("input_trust","")).startswith("rs4n-real:")
+ if automatic:
+  from real_dev_proof import parse_dev_inputs,verify_workflow,REAL_ROOT,REAL_REF
+  handoff=parse_dev_inputs(values);request={"data_commit":handoff["commit"],"snapshot":handoff["sid"],"selection":"CURRENT"}
+ else:request=admit(event,os.environ)
  def git(path,*args):
   q=subprocess.run(['git','--no-optional-locks','-C',str(path),*args],capture_output=True);need(q.returncode==0,'CHECKOUT_UNKNOWN');return q.stdout.decode().strip()
  need(git(site,'rev-parse','HEAD')==os.environ['GITHUB_SHA'],'DEV_CODE_CHECKOUT')
  source=site/'.rs4n-public-data';need(git(source,'remote','get-url','origin') in ('https://github.com/malin-bg/bgzona-github-lab','https://github.com/malin-bg/bgzona-github-lab.git'),'PUBLIC_ENDPOINT')
- ref=REFS[request['selection']];commit=request['data_commit']
- root=ROOT if request['selection']=='CURRENT' else REAL12_COMMIT
+ ref=REAL_REF if automatic else REFS[request['selection']];commit=request['data_commit']
+ root=REAL_ROOT if automatic else ROOT if request['selection']=='CURRENT' else REAL12_COMMIT
  need(git(source,'rev-parse','HEAD')==git(source,'rev-parse',ref)==commit and git(source,'rev-list','--max-parents=0',commit)==root,'PUBLIC_CHECKOUT_BINDING')
+ if automatic:
+  state=json.loads(git(source,'show',commit+':state.json'))
+  expected=verify_workflow(handoff,values,event,os.environ,commit,state.get('snapshot'))
+  (temp/'rs4n-expected-seal').write_text(expected,encoding='ascii')
  package=Path(__file__).resolve().parent/'git_snapshot';common=Path(os.path.commonpath([site,temp]));need(common!=Path(common.anchor),'WORKSPACE_SCOPE')
  rel=lambda path:os.path.relpath(path,package).replace('\\','/')
  policy={'schema':1,'channel':'dev','endpoint':rel(source/'.git'),'workspace':rel(common),'output_workspace':rel(temp),'ref':ref,'root':root}
  (package/'site-input-policy.json').write_text(json.dumps(policy,indent=2)+'\n','utf8');(temp/'rs4n-request.json').write_text(json.dumps(request)+'\n','utf8')
  print('RS4N_READ_ONLY_BUILD_INPUT_BOUND')
-if __name__=='__main__':main()
+if __name__=='__main__':
+ import sys
+ sys.path.insert(0,str(Path(__file__).resolve().parent))
+ try:main()
+ except Exception:raise SystemExit('DEV_BUILD_INPUT_STOP') from None

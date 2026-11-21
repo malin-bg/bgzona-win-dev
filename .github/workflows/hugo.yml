@@ -135,7 +135,7 @@
     },
     "snapshot-build-only": {
       "name": "Read-only PUBLIC snapshot DEV acceptance",
-      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && (inputs.input_trust == 'rs4n-build-only' || (inputs.input_trust == 'rs4n-real13-pages' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'))",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && ((github.actor_id == '252877943' && (inputs.input_trust == 'rs4n-build-only' || (inputs.input_trust == 'rs4n-real13-pages' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'))) || (github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:')))",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 15,
       "permissions": {
@@ -157,7 +157,7 @@
           "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
           "with": {
             "repository": "malin-bg/bgzona-github-lab",
-            "ref": "${{ (inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' || inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81') && 'publisher-data' || 'rs4m-synthetic-data' }}",
+            "ref": "${{ (startsWith(inputs.input_trust, 'rs4n-real:') || inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' || inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81') && 'publisher-data' || 'rs4m-synthetic-data' }}",
             "path": ".rs4n-public-data",
             "fetch-depth": 0,
             "persist-credentials": false
@@ -215,10 +215,28 @@
             "path": "${{ runner.temp }}/rs4n-dev/candidate/public",
             "retention-days": 1
           }
+        },
+        {
+          "name": "Verify exact Lab seal before upload",
+          "if": "github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:')",
+          "shell": "bash",
+          "run": "set -euo pipefail\nseal=\"$(cat \"$RUNNER_TEMP/rs4n-expected-seal\")\"\n[[ \"$seal\" =~ ^[a-f0-9]{64}$ ]]\npython -B tools/media_snapshot/artifact_seal.py verify --root \"$RUNNER_TEMP/rs4n-dev/candidate/public\" --manifest \"$RUNNER_TEMP/rs4n-dev/site-seal.json\" --expected-digest \"$seal\"\n"
+        },
+        {
+          "name": "Upload the independently matched DEV seal",
+          "id": "real_pages",
+          "if": "github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:')",
+          "uses": "actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa",
+          "with": {
+            "name": "real-dev-pages",
+            "path": "${{ runner.temp }}/rs4n-dev/candidate/public",
+            "retention-days": 1
+          }
         }
       ],
       "outputs": {
-        "pages_artifact_id": "${{ steps.real13_pages.outputs.artifact_id }}"
+        "pages_artifact_id": "${{ steps.real13_pages.outputs.artifact_id }}",
+        "real_artifact_id": "${{ steps.real_pages.outputs.artifact_id }}"
       }
     },
     "real13-pages": {
@@ -262,7 +280,113 @@
           }
         }
       ]
+    },
+    "dev13-rollback": {
+      "name": "Controlled DEV rollback from archived bytes",
+      "if": "github.repository == 'malin-bg/bgzona-win-dev' && github.repository_id == '1149689018' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.actor_id == '252877943' && github.run_attempt == 1 && inputs.input_trust == 'rs4n-rollback-dev13-accept-archived-metadata' && inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81'",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 10,
+      "permissions": {
+        "contents": "read",
+        "pages": "write",
+        "id-token": "write"
+      },
+      "environment": {
+        "name": "github-pages",
+        "url": "${{ steps.deployment.outputs.page_url }}"
+      },
+      "steps": [
+        {
+          "name": "Checkout immutable DEV workflow code",
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "with": {
+            "ref": "${{ github.workflow_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Obtain the owner-restaged exact archive",
+          "shell": "bash",
+          "run": "set -euo pipefail\nmkdir \"$RUNNER_TEMP/dev13-archived\"\ncurl --disable --fail --silent --show-error --location --proto \"=https\" --proto-redir \"=https\" --max-time 120 --max-filesize 26480640 --output \"$RUNNER_TEMP/dev13-archived/artifact.tar\" https://github.com/malin-bg/bgzona-win-dev/releases/download/dev13-rollback-7962490466/dev13-sealed.tar\n"
+        },
+        {
+          "name": "Verify DEV target, archive bytes and exact seal",
+          "shell": "bash",
+          "run": "set -euo pipefail\ntest \"$(git rev-parse HEAD)\" = \"$GITHUB_SHA\"\npython3 -I -B tools/media_snapshot/rollback_archive.py \"$RUNNER_TEMP/dev13-archived/artifact.tar\"\n"
+        },
+        {
+          "name": "Upload only the accepted unchanged archive",
+          "id": "upload",
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "with": {
+            "name": "dev13-rollback-pages",
+            "path": "${{ runner.temp }}/dev13-archived/artifact.tar",
+            "retention-days": 1,
+            "if-no-files-found": "error",
+            "overwrite": false
+          }
+        },
+        {
+          "name": "Deploy only the verified archive to DEV",
+          "id": "deployment",
+          "uses": "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e",
+          "with": {
+            "artifact_name": "dev13-rollback-pages"
+          }
+        }
+      ]
+    },
+    "real-pages": {
+      "name": "Deploy only the admitted real PUBLIC snapshot to DEV",
+      "needs": "snapshot-build-only",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:') && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.real_artifact_id != ''",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 10,
+      "permissions": {
+        "pages": "write",
+        "id-token": "write",
+        "contents": "read"
+      },
+      "environment": {
+        "name": "github-pages",
+        "url": "${{ steps.deployment.outputs.page_url }}"
+      },
+      "steps": [
+        {
+          "name": "Checkout immutable DEV workflow code",
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "with": {
+            "ref": "${{ github.workflow_sha }}",
+            "persist-credentials": false
+          }
+        },
+        {
+          "name": "Download the exact same-run Pages artifact by ID",
+          "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+          "with": {
+            "artifact-ids": "${{ needs.snapshot-build-only.outputs.real_artifact_id }}",
+            "path": "${{ runner.temp }}/real-dev-download",
+            "merge-multiple": true
+          }
+        },
+        {
+          "name": "Verify archived bytes and current PUBLIC and DEV refs",
+          "shell": "bash",
+          "env": {
+            "H1_WORKFLOW_SHA": "${{ github.workflow_sha }}"
+          },
+          "run": "set -euo pipefail\npython3 -I -B tools/media_snapshot/real_dev_deploy.py \"$RUNNER_TEMP/real-dev-download/artifact.tar\"\n"
+        },
+        {
+          "name": "Deploy the verified REAL13 Pages artifact",
+          "id": "deployment",
+          "uses": "actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e",
+          "with": {
+            "artifact_name": "real-dev-pages"
+          }
+        }
+      ]
     }
   },
-  "run-name": "DEV ${{ inputs.accepted_cid || github.sha }}"
+  "run-name": "DEV ${{ startsWith(inputs.input_trust, 'rs4n-real:') && 'automatic real publication' || inputs.accepted_cid || github.sha }}"
 }
