@@ -16,7 +16,9 @@ def admit(event,env):
  need(env.get('H1_WORKFLOW_SHA')==env.get('GITHUB_SHA') and re.fullmatch('[a-f0-9]{40}',env.get('GITHUB_SHA','')),'DEV_CODE')
  need(event.get('repository',{}).get('id')==1149689018 and event.get('sender',{}).get('id')==252877943,'DEV_EVENT_BINDING')
  values=event.get('inputs',{})
- need(set(values)=={'accepted_cid','input_trust'} and values['input_trust']==MARKER,'DEV_BUILD_ONLY_INPUTS')
+ need(set(values)=={'accepted_cid','input_trust'} and values['input_trust'] in (MARKER,'rs4n-real12-pages'),'DEV_BUILD_ONLY_INPUTS')
+ if values['input_trust']=='rs4n-real12-pages':
+  need(values['accepted_cid']==REAL12_SID,'DEV_REAL12_PAGES_INPUT')
  if values['accepted_cid']==SID:
   return {'data_commit':COMMIT,'selection':'CURRENT','snapshot':SID}
  need(values['accepted_cid']==REAL12_SID,'DEV_BUILD_ONLY_INPUTS')
