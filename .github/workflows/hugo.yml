@@ -157,7 +157,7 @@
           "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
           "with": {
             "repository": "malin-bg/bgzona-github-lab",
-            "ref": "${{ (startsWith(inputs.input_trust, 'rs4n-real:') || inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' || inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81') && 'publisher-data' || 'rs4m-synthetic-data' }}",
+            "ref": "${{ (startsWith(inputs.input_trust, 'rs4n-real:') || (github.actor_id == '252877943' && inputs.input_trust == 'rs4n-build-only' && inputs.accepted_cid == '1f8aed5bc85e9bea4da9e714065025d327ce748c192d98edd62453e05db2249e') || inputs.accepted_cid == '317a99d4d0f13416e2a001b94352870d95f63cc4a057b6957ebaf22a68edc55f' || inputs.accepted_cid == 'f61fc13e43557f75df88eed7f39e4ab661c5097f60f8d3f9131fab22d9b36f81') && 'publisher-data' || 'rs4m-synthetic-data' }}",
             "path": ".rs4n-public-data",
             "fetch-depth": 0,
             "persist-credentials": false
@@ -190,6 +190,12 @@
           }
         },
         {
+          "name": "Verify exact Lab seal before upload",
+          "if": "(github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:')) || (github.actor_id == '252877943' && inputs.input_trust == 'rs4n-build-only' && inputs.accepted_cid == '1f8aed5bc85e9bea4da9e714065025d327ce748c192d98edd62453e05db2249e')",
+          "shell": "bash",
+          "run": "set -euo pipefail\nseal=\"$(cat \"$RUNNER_TEMP/rs4n-expected-seal\")\"\n[[ \"$seal\" =~ ^[a-f0-9]{64}$ ]]\npython -B tools/media_snapshot/artifact_seal.py verify --root \"$RUNNER_TEMP/rs4n-dev/candidate/public\" --manifest \"$RUNNER_TEMP/rs4n-dev/site-seal.json\" --expected-digest \"$seal\"\n"
+        },
+        {
           "name": "Preserve build-only receipts",
           "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
           "with": {
@@ -215,12 +221,6 @@
             "path": "${{ runner.temp }}/rs4n-dev/candidate/public",
             "retention-days": 1
           }
-        },
-        {
-          "name": "Verify exact Lab seal before upload",
-          "if": "github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:')",
-          "shell": "bash",
-          "run": "set -euo pipefail\nseal=\"$(cat \"$RUNNER_TEMP/rs4n-expected-seal\")\"\n[[ \"$seal\" =~ ^[a-f0-9]{64}$ ]]\npython -B tools/media_snapshot/artifact_seal.py verify --root \"$RUNNER_TEMP/rs4n-dev/candidate/public\" --manifest \"$RUNNER_TEMP/rs4n-dev/site-seal.json\" --expected-digest \"$seal\"\n"
         },
         {
           "name": "Upload the independently matched DEV seal",
