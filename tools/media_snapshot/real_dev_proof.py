@@ -14,7 +14,7 @@ DEV = 'malin-bg/bgzona-win-dev'
 OWNER = 252877943
 DEV_APP = 353092585
 # Pin the reviewed Lab commit before staged setup. An unset pin denies admission.
-LAB_CODE_PIN = '5a7a1395bae183b2768641a51b194e37aeb80536'
+LAB_CODE_PIN = '9da59c104b45f956e172b5399ff3140025da5176'
 REAL_ROOT = '05cfdeb41ca116dc07614906fbbdee9b3a597745'
 REAL_REF = 'refs/heads/publisher-data'
 
