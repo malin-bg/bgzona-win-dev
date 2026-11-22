@@ -339,7 +339,7 @@
     "real-pages": {
       "name": "Deploy only the admitted real PUBLIC snapshot to DEV",
       "needs": "snapshot-build-only",
-      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:') && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.real_artifact_id != ''",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:') && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.real_artifact_id != '' && false",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 10,
       "permissions": {
