@@ -176,7 +176,8 @@
         {
           "name": "Bind read-only snapshot input",
           "env": {
-            "H1_WORKFLOW_SHA": "${{ github.workflow_sha }}"
+            "H1_WORKFLOW_SHA": "${{ github.workflow_sha }}",
+            "BGZONA_DEV_API_TOKEN": "${{ github.token }}"
           },
           "shell": "bash",
           "run": "/usr/bin/python3 -I -B tools/media_snapshot/build_only_guard.py"

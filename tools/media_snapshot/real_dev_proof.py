@@ -98,8 +98,11 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def read_api(repository, endpoint):
+    token = os.environ.get('BGZONA_DEV_API_TOKEN')
+    need(token, 'GITHUB_TOKEN_REQUIRED')
     url = 'https://api.github.com/repos/' + repository + endpoint
     request = Request(url, headers={'Accept':'application/vnd.github+json',
+                                   'Authorization':'Bearer ' + token,
                                    'User-Agent':'BGZONA-DEV-admission'})
     with build_opener(NoRedirect).open(request, timeout=15) as response:
         return json.load(response)
