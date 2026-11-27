@@ -32,7 +32,7 @@ def gallery_pages(out,rows,ck):
  """Check real pagers, then aggregate their cards for existing per-image checks."""
  galleries={}
  for col in ('kolaji','poslaniya'):
-  ordered=sorted((r for r in rows if r['collection']==col),key=lambda r:r['number'])
+  ordered=sorted((r for r in rows if r['collection']==col),key=lambda r:r['number'],reverse=True)
   expected_ids=[r['stem'] for r in ordered];count=max(1,(len(ordered)+49)//50)
   paths=[f'{col}/index.html']+[f'{col}/page/{n}/index.html' for n in range(2,count+1)]
   found=[f'{col}/index.html'] if (out/col/'index.html').is_file() else []
