@@ -45,6 +45,7 @@
         "originalHash" .sha256 "full" $full "thumb" $thumb.RelPermalink "thumbWidth" $thumb.Width "thumbHeight" $thumb.Height
         "ogurl" $ogurl "ogkind" $ogkind "text" $desc "usertext" $usertext "slideshow" .slideshow
         "cover" (dict "image" $ogurl "hidden" true) "images" (slice $ogurl) }}
+    {{ with .activity }}{{ $params = merge $params (dict "activity" .) }}{{ end }}
     {{ $page := dict "path" $slug "kind" "page" "type" "media" "layout" "single"
         "title" (printf "%s %05d" $label (int .number)) "description" $desc
         "date" "2026-10-17T00:00:00+03:00" "params" $params }}

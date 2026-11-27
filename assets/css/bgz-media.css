@@ -13,6 +13,7 @@ main.main:has(> .bgz-media-page) { max-width: 1200px; }
   gap: 16px;
 }
 .media-card {
+  position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -155,3 +156,17 @@ main.main:has(> .bgz-media-page) { max-width: 1200px; }
 .media-pagination :is(a, span) { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; }
 .media-pagination a:hover { background: var(--code-bg); }
 .media-pagination [aria-current="page"] { background: var(--primary); color: var(--theme); font-weight: 600; }
+
+.media-freshness {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-start: 14px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--entry);
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+}

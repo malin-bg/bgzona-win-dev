@@ -1,4 +1,31 @@
 (() => {
+  const freshness = document.querySelectorAll('.media-freshness');
+  if (freshness.length) {
+    const day = 86400000;
+    let freshnessTimer;
+    const refreshFreshness = () => {
+      clearTimeout(freshnessTimer);
+      const now = Date.now();
+      let nextChange = Infinity;
+      for (const badge of freshness) {
+        const published = Number(badge.dataset.publishedAt) * 1000;
+        const updated = Number(badge.dataset.updatedAt) * 1000;
+        const isNew = published > 0 && published <= now && now < published + 14 * day;
+        const isUpdated = updated > 0 && updated <= now && now < updated + 7 * day;
+        badge.textContent = isNew ? 'Ново' : isUpdated ? 'Обновено' : '';
+        badge.hidden = !badge.textContent;
+        if (isNew) nextChange = Math.min(nextChange, published + 14 * day);
+        else if (isUpdated) nextChange = Math.min(nextChange, updated + 7 * day);
+      }
+      if (Number.isFinite(nextChange)) {
+        freshnessTimer = setTimeout(refreshFreshness, Math.max(1, nextChange - Date.now()));
+      }
+    };
+    refreshFreshness();
+    document.addEventListener('visibilitychange', refreshFreshness);
+    window.addEventListener('pageshow', refreshFreshness);
+  }
+
   const box = document.querySelector('#media-lightbox');
   const image = document.querySelector('#lightbox-image');
   const previews = [...document.querySelectorAll('.full-preview')];
