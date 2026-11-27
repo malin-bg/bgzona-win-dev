@@ -340,7 +340,7 @@
     "real-pages": {
       "name": "Deploy only the admitted real PUBLIC snapshot to DEV",
       "needs": "snapshot-build-only",
-      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:') && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.real_artifact_id != '' && false",
+      "if": "github.repository_id == '1149689018' && github.repository == 'malin-bg/bgzona-win-dev' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && github.run_attempt == 1 && github.actor_id == '353092585' && startsWith(inputs.input_trust, 'rs4n-real:') && needs.snapshot-build-only.result == 'success' && needs.snapshot-build-only.outputs.real_artifact_id != ''",
       "runs-on": "ubuntu-24.04",
       "timeout-minutes": 10,
       "permissions": {
@@ -374,7 +374,8 @@
           "name": "Verify archived bytes and current PUBLIC and DEV refs",
           "shell": "bash",
           "env": {
-            "H1_WORKFLOW_SHA": "${{ github.workflow_sha }}"
+            "H1_WORKFLOW_SHA": "${{ github.workflow_sha }}",
+            "BGZONA_DEV_API_TOKEN": "${{ github.token }}"
           },
           "run": "set -euo pipefail\npython3 -I -B tools/media_snapshot/real_dev_deploy.py \"$RUNNER_TEMP/real-dev-download/artifact.tar\"\n"
         },
